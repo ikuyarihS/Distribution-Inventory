@@ -156,90 +156,90 @@ namespace ChiaHang
 
                     var dicRow = new Dictionary<string, int>();
                     foreach (var PODate in PO)
-                    foreach (var _ProductOrder in PODate.ListProductOrder)
-                    foreach (var _CustomerOrder in _ProductOrder.ListCustomerOrder)
-                    {
-                        if (!YesNoByUnit)
-                        {
-                            var _OrderUnitType = ProperUnit(_CustomerOrder.Unit.ToLower(), dicUnit);
-                            _CustomerOrder.Unit = _OrderUnitType;
-                            if (dicCustomer[_CustomerOrder.CustomerId].CustomerType == "VM+" && _OrderUnitType != "Kg")
+                        foreach (var _ProductOrder in PODate.ListProductOrder)
+                            foreach (var _CustomerOrder in _ProductOrder.ListCustomerOrder)
                             {
-                                var _ProductCode = dicProduct[_ProductOrder.ProductId].ProductCode;
-                                if (dicProductUnit.TryGetValue(_ProductCode, out var _ProductUnit))
+                                if (!YesNoByUnit)
                                 {
-                                    var _ProductUnitRegion =
-                                        _ProductUnit.ListRegion.FirstOrDefault(x => x.OrderUnitType == _OrderUnitType);
-                                    if (_ProductUnitRegion != null)
+                                    var _OrderUnitType = ProperUnit(_CustomerOrder.Unit.ToLower(), dicUnit);
+                                    _CustomerOrder.Unit = _OrderUnitType;
+                                    if (dicCustomer[_CustomerOrder.CustomerId].CustomerType == "VM+" && _OrderUnitType != "Kg")
                                     {
-                                        _CustomerOrder.Unit = _OrderUnitType;
-                                        _CustomerOrder.QuantityOrderKg =
-                                            _CustomerOrder.QuantityOrder * _ProductUnitRegion.OrderUnitPer;
+                                        var _ProductCode = dicProduct[_ProductOrder.ProductId].ProductCode;
+                                        if (dicProductUnit.TryGetValue(_ProductCode, out var _ProductUnit))
+                                        {
+                                            var _ProductUnitRegion =
+                                                _ProductUnit.ListRegion.FirstOrDefault(x => x.OrderUnitType == _OrderUnitType);
+                                            if (_ProductUnitRegion != null)
+                                            {
+                                                _CustomerOrder.Unit = _OrderUnitType;
+                                                _CustomerOrder.QuantityOrderKg =
+                                                    _CustomerOrder.QuantityOrder * _ProductUnitRegion.OrderUnitPer;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            _CustomerOrder.Unit = "Kg";
+                                            _CustomerOrder.QuantityOrderKg = _CustomerOrder.QuantityOrder;
+                                        }
                                     }
+                                    else
+                                    {
+                                        _CustomerOrder.Unit = "Kg";
+                                        _CustomerOrder.QuantityOrderKg = _CustomerOrder.QuantityOrder;
+                                    }
+                                }
+
+                                var _Product = dicProduct[_ProductOrder.ProductId];
+                                var _Customer = dicCustomer[_CustomerOrder.CustomerId];
+
+                                DataRow dr = null;
+
+                                var sKey = _Product.ProductCode + _Customer.CustomerCode;
+                                if (!dicRow.TryGetValue(sKey, out var _rowIndex))
+                                {
+                                    dr = dtPO.NewRow();
+                                    dicRow.Add(sKey, dtPO.Rows.Count);
+
+                                    dr["VE Code"] = _Product.ProductCode;
+                                    dr["VE Name"] = _Product.ProductName;
+                                    dr["Class"] = _Product.ProductClassification;
+                                    dr["StoreCode"] = _Customer.CustomerCode;
+                                    dr["StoreName"] = _Customer.CustomerName;
+                                    dr["StoreType"] = _Customer.CustomerType;
+                                    dr["SubRegion"] = _Customer.CustomerRegion;
+                                    dr["Region"] = _Customer.CustomerBigRegion;
+                                    dr["P&L"] = _Customer.Company;
+                                    dr["Note"] =
+                                        _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
+                                            ? "South"
+                                            : "North")
+                                            ? "Ok"
+                                            : "Out of List";
+                                    if (YesNoByUnit)
+                                    {
+                                        dr["Unit"] = _CustomerOrder.Unit;
+                                        dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] = _CustomerOrder.QuantityOrder;
+                                    }
+                                    else
+                                    {
+                                        dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] = _CustomerOrder.QuantityOrderKg;
+                                    }
+                                    dtPO.Rows.Add(dr);
                                 }
                                 else
                                 {
-                                    _CustomerOrder.Unit = "Kg";
-                                    _CustomerOrder.QuantityOrderKg = _CustomerOrder.QuantityOrder;
+                                    dr = dtPO.Rows[_rowIndex];
+                                    if (YesNoByUnit)
+                                        dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] =
+                                            (double)dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] +
+                                            _CustomerOrder.QuantityOrder;
+                                    else
+                                        dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] =
+                                            (double)dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] +
+                                            _CustomerOrder.QuantityOrderKg;
                                 }
                             }
-                            else
-                            {
-                                _CustomerOrder.Unit = "Kg";
-                                _CustomerOrder.QuantityOrderKg = _CustomerOrder.QuantityOrder;
-                            }
-                        }
-
-                        var _Product = dicProduct[_ProductOrder.ProductId];
-                        var _Customer = dicCustomer[_CustomerOrder.CustomerId];
-
-                        DataRow dr = null;
-
-                        var sKey = _Product.ProductCode + _Customer.CustomerCode;
-                        if (!dicRow.TryGetValue(sKey, out var _rowIndex))
-                        {
-                            dr = dtPO.NewRow();
-                            dicRow.Add(sKey, dtPO.Rows.Count);
-
-                            dr["VE Code"] = _Product.ProductCode;
-                            dr["VE Name"] = _Product.ProductName;
-                            dr["Class"] = _Product.ProductClassification;
-                            dr["StoreCode"] = _Customer.CustomerCode;
-                            dr["StoreName"] = _Customer.CustomerName;
-                            dr["StoreType"] = _Customer.CustomerType;
-                            dr["SubRegion"] = _Customer.CustomerRegion;
-                            dr["Region"] = _Customer.CustomerBigRegion;
-                            dr["P&L"] = _Customer.Company;
-                            dr["Note"] =
-                                _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
-                                    ? "South"
-                                    : "North")
-                                    ? "Ok"
-                                    : "Out of List";
-                            if (YesNoByUnit)
-                            {
-                                dr["Unit"] = _CustomerOrder.Unit;
-                                dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] = _CustomerOrder.QuantityOrder;
-                            }
-                            else
-                            {
-                                dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] = _CustomerOrder.QuantityOrderKg;
-                            }
-                            dtPO.Rows.Add(dr);
-                        }
-                        else
-                        {
-                            dr = dtPO.Rows[_rowIndex];
-                            if (YesNoByUnit)
-                                dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] =
-                                    (double) dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] +
-                                    _CustomerOrder.QuantityOrder;
-                            else
-                                dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] =
-                                    (double) dr[PODate.DateOrder.Date.ToString("MM/dd/yyyy")] +
-                                    _CustomerOrder.QuantityOrderKg;
-                        }
-                    }
                 }
                 // Vertical PO - making it pivot-able ( No pun intended. )
                 else if (Choice == "Vertical")
@@ -266,53 +266,53 @@ namespace ChiaHang
 
                     var dicRow = new Dictionary<string, int>();
                     foreach (var PODate in PO)
-                    foreach (var _ProductOrder in PODate.ListProductOrder)
-                    foreach (var _CustomerOrder in _ProductOrder.ListCustomerOrder)
-                    {
-                        var _Product = dicProduct[_ProductOrder.ProductId];
-                        var _Customer = dicCustomer[_CustomerOrder.CustomerId];
+                        foreach (var _ProductOrder in PODate.ListProductOrder)
+                            foreach (var _CustomerOrder in _ProductOrder.ListCustomerOrder)
+                            {
+                                var _Product = dicProduct[_ProductOrder.ProductId];
+                                var _Customer = dicCustomer[_CustomerOrder.CustomerId];
 
-                        DataRow dr = null;
+                                DataRow dr = null;
 
-                        var _rowIndex = 0;
-                        var sKey = _Product.ProductCode + _Customer.CustomerCode + _Customer.Company +
-                                   PODate.DateOrder.Date.ToString("yyyyMMdd");
+                                var _rowIndex = 0;
+                                var sKey = _Product.ProductCode + _Customer.CustomerCode + _Customer.Company +
+                                           PODate.DateOrder.Date.ToString("yyyyMMdd");
 
-                        if (!dicRow.TryGetValue(sKey, out _rowIndex))
-                        {
-                            dr = dtPO.NewRow();
-                            dicRow.Add(sKey, dtPO.Rows.Count);
+                                if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                {
+                                    dr = dtPO.NewRow();
+                                    dicRow.Add(sKey, dtPO.Rows.Count);
 
-                            dr["PCODE"] = _Product.ProductCode;
-                            dr["PNAME"] = _Product.ProductName;
-                            dr["PCLASS"] = _Product.ProductClassification;
-                            dr["CCODE"] = _Customer.CustomerCode;
-                            dr["CNAME"] = _Customer.CustomerName;
-                            dr["CTYPE"] = _Customer.CustomerType;
-                            dr["CREGION"] = _Customer.CustomerRegion;
-                            dr["REGION"] = _Customer.CustomerBigRegion;
-                            dr["P&L"] = _Customer.Company;
-                            dr["Note"] =
-                                _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
-                                    ? "South"
-                                    : "North")
-                                    ? "Ok"
-                                    : "Out of List";
-                            dr["Climate"] = _Product.ProductClimate;
-                            dr["DateOrder"] = (int) (PODate.DateOrder.Date - new DateTime(1900, 1, 1)).TotalDays + 2;
-                            dr["QuantityOrder"] = _CustomerOrder.QuantityOrder;
-                            dr["DateReceive"] = (string) dr["REGION"] == "Miền Nam"
-                                ? (int) dr["DateOrder"] + 1
-                                : (int) dr["DateOrder"];
+                                    dr["PCODE"] = _Product.ProductCode;
+                                    dr["PNAME"] = _Product.ProductName;
+                                    dr["PCLASS"] = _Product.ProductClassification;
+                                    dr["CCODE"] = _Customer.CustomerCode;
+                                    dr["CNAME"] = _Customer.CustomerName;
+                                    dr["CTYPE"] = _Customer.CustomerType;
+                                    dr["CREGION"] = _Customer.CustomerRegion;
+                                    dr["REGION"] = _Customer.CustomerBigRegion;
+                                    dr["P&L"] = _Customer.Company;
+                                    dr["Note"] =
+                                        _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
+                                            ? "South"
+                                            : "North")
+                                            ? "Ok"
+                                            : "Out of List";
+                                    dr["Climate"] = _Product.ProductClimate;
+                                    dr["DateOrder"] = (int)(PODate.DateOrder.Date - new DateTime(1900, 1, 1)).TotalDays + 2;
+                                    dr["QuantityOrder"] = _CustomerOrder.QuantityOrder;
+                                    dr["DateReceive"] = (string)dr["REGION"] == "Miền Nam"
+                                        ? (int)dr["DateOrder"] + 1
+                                        : (int)dr["DateOrder"];
 
-                            dtPO.Rows.Add(dr);
-                        }
-                        else
-                        {
-                            dr = dtPO.Rows[_rowIndex];
-                            dr["QuantityOrder"] = (double) dr["QuantityOrder"] + _CustomerOrder.QuantityOrder;
-                        }
-                    }
+                                    dtPO.Rows.Add(dr);
+                                }
+                                else
+                                {
+                                    dr = dtPO.Rows[_rowIndex];
+                                    dr["QuantityOrder"] = (double)dr["QuantityOrder"] + _CustomerOrder.QuantityOrder;
+                                }
+                            }
                 }
                 // Compact PO - Condensing PO to Customer Type level.
                 else if (Choice == "Compact")
@@ -339,54 +339,54 @@ namespace ChiaHang
 
                     var dicRow = new Dictionary<string, int>();
                     foreach (var PODate in PO)
-                    foreach (var _ProductOrder in PODate.ListProductOrder)
-                    foreach (var _CustomerOrder in _ProductOrder.ListCustomerOrder)
-                    {
-                        var _Product = dicProduct[_ProductOrder.ProductId];
-                        var _Customer = dicCustomer[_CustomerOrder.CustomerId];
+                        foreach (var _ProductOrder in PODate.ListProductOrder)
+                            foreach (var _CustomerOrder in _ProductOrder.ListCustomerOrder)
+                            {
+                                var _Product = dicProduct[_ProductOrder.ProductId];
+                                var _Customer = dicCustomer[_CustomerOrder.CustomerId];
 
-                        DataRow dr = null;
+                                DataRow dr = null;
 
-                        var _rowIndex = 0;
-                        var sKey = _Product.ProductCode + _Customer.CustomerBigRegion +
-                                   _Customer.CustomerRegion + _Customer.CustomerType + _Customer.Company +
-                                   PODate.DateOrder.Date.ToString("yyyyMMdd");
+                                var _rowIndex = 0;
+                                var sKey = _Product.ProductCode + _Customer.CustomerBigRegion +
+                                           _Customer.CustomerRegion + _Customer.CustomerType + _Customer.Company +
+                                           PODate.DateOrder.Date.ToString("yyyyMMdd");
 
-                        if (!dicRow.TryGetValue(sKey, out _rowIndex))
-                        {
-                            dr = dtPO.NewRow();
-                            dicRow.Add(sKey, dtPO.Rows.Count);
+                                if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                {
+                                    dr = dtPO.NewRow();
+                                    dicRow.Add(sKey, dtPO.Rows.Count);
 
-                            dr["PCODE"] = _Product.ProductCode;
-                            dr["PNAME"] = _Product.ProductName;
-                            dr["PCLASS"] = _Product.ProductClassification;
-                            dr["ProductOrientation"] = _Product.ProductOrientation;
-                            dr["ProductClimate"] = _Product.ProductClimate;
-                            dr["ProductionGroup"] = _Product.ProductionGroup;
-                            //dr["CustomerCode"] = _Customer.CustomerCode;
-                            //dr["CustomerName"] = _Customer.CustomerName;
-                            dr["Note"] =
-                                _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
-                                    ? "South"
-                                    : "North")
-                                    ? "Ok"
-                                    : "Out of List";
-                            dr["CTYPE"] = _Customer.CustomerType;
-                            dr["CREGION"] = _Customer.CustomerRegion;
-                            dr["P&L"] = _Customer.Company;
-                            dr["REGION"] = _Customer.CustomerBigRegion;
-                            //dr["DateOrder"] = (int)(PODate.DateOrder.Date - new DateTime(1900, 1, 1)).TotalDays + 2;
-                            dr["DateOrder"] = PODate.DateOrder.Date;
-                            dr["QuantityOrder"] = _CustomerOrder.QuantityOrder;
+                                    dr["PCODE"] = _Product.ProductCode;
+                                    dr["PNAME"] = _Product.ProductName;
+                                    dr["PCLASS"] = _Product.ProductClassification;
+                                    dr["ProductOrientation"] = _Product.ProductOrientation;
+                                    dr["ProductClimate"] = _Product.ProductClimate;
+                                    dr["ProductionGroup"] = _Product.ProductionGroup;
+                                    //dr["CustomerCode"] = _Customer.CustomerCode;
+                                    //dr["CustomerName"] = _Customer.CustomerName;
+                                    dr["Note"] =
+                                        _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
+                                            ? "South"
+                                            : "North")
+                                            ? "Ok"
+                                            : "Out of List";
+                                    dr["CTYPE"] = _Customer.CustomerType;
+                                    dr["CREGION"] = _Customer.CustomerRegion;
+                                    dr["P&L"] = _Customer.Company;
+                                    dr["REGION"] = _Customer.CustomerBigRegion;
+                                    //dr["DateOrder"] = (int)(PODate.DateOrder.Date - new DateTime(1900, 1, 1)).TotalDays + 2;
+                                    dr["DateOrder"] = PODate.DateOrder.Date;
+                                    dr["QuantityOrder"] = _CustomerOrder.QuantityOrder;
 
-                            dtPO.Rows.Add(dr);
-                        }
-                        else
-                        {
-                            dr = dtPO.Rows[_rowIndex];
-                            dr["QuantityOrder"] = (double) dr["QuantityOrder"] + _CustomerOrder.QuantityOrder;
-                        }
-                    }
+                                    dtPO.Rows.Add(dr);
+                                }
+                                else
+                                {
+                                    dr = dtPO.Rows[_rowIndex];
+                                    dr["QuantityOrder"] = (double)dr["QuantityOrder"] + _CustomerOrder.QuantityOrder;
+                                }
+                            }
                 }
                 else if (Choice == "Report")
                 {
@@ -411,50 +411,50 @@ namespace ChiaHang
 
                     var dicRow = new Dictionary<string, int>();
                     foreach (var PODate in PO)
-                    foreach (var _ProductOrder in PODate.ListProductOrder)
-                    foreach (var _CustomerOrder in _ProductOrder.ListCustomerOrder)
-                    {
-                        var _Product = dicProduct[_ProductOrder.ProductId];
-                        var _Customer = dicCustomer[_CustomerOrder.CustomerId];
+                        foreach (var _ProductOrder in PODate.ListProductOrder)
+                            foreach (var _CustomerOrder in _ProductOrder.ListCustomerOrder)
+                            {
+                                var _Product = dicProduct[_ProductOrder.ProductId];
+                                var _Customer = dicCustomer[_CustomerOrder.CustomerId];
 
-                        DataRow dr = null;
+                                DataRow dr = null;
 
-                        var _rowIndex = 0;
-                        var sKey = _Product.ProductCode + _Customer.CustomerType +
-                                   _Customer.CustomerBigRegion + _Customer.Company +
-                                   PODate.DateOrder.Date.ToString("yyyyMMdd");
+                                var _rowIndex = 0;
+                                var sKey = _Product.ProductCode + _Customer.CustomerType +
+                                           _Customer.CustomerBigRegion + _Customer.Company +
+                                           PODate.DateOrder.Date.ToString("yyyyMMdd");
 
-                        if (!dicRow.TryGetValue(sKey, out _rowIndex))
-                        {
-                            dr = dtPO.NewRow();
-                            dicRow.Add(sKey, dtPO.Rows.Count);
+                                if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                {
+                                    dr = dtPO.NewRow();
+                                    dicRow.Add(sKey, dtPO.Rows.Count);
 
-                            dr["REGION"] = string.Join(string.Empty,
-                                _Customer.CustomerBigRegion.Split(' ').Select(x => x.First())).ToUpper();
-                            dr["PCODE"] = _Product.ProductCode;
-                            dr["Note"] = _Product.ProductCode.Substring(0, 1) == "K"
-                                ? "Ok"
-                                : _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
-                                    ? "South"
-                                    : "North")
-                                    ? "Ok"
-                                    : "Out of List";
-                            dr["CTYPE"] = _Customer.CustomerType;
-                            dr["P&L"] = _Customer.Company;
-                            dr["DateOrder"] = PODate.DateOrder.Date;
-                            dr["QuantityOrder"] = _CustomerOrder.QuantityOrder;
-                            dr["DateReceive"] = _Customer.CustomerBigRegion == "Miền Nam"
-                                ? PODate.DateOrder.Date.AddDays(1)
-                                : PODate.DateOrder.Date;
+                                    dr["REGION"] = string.Join(string.Empty,
+                                        _Customer.CustomerBigRegion.Split(' ').Select(x => x.First())).ToUpper();
+                                    dr["PCODE"] = _Product.ProductCode;
+                                    dr["Note"] = _Product.ProductCode.Substring(0, 1) == "K"
+                                        ? "Ok"
+                                        : _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
+                                            ? "South"
+                                            : "North")
+                                            ? "Ok"
+                                            : "Out of List";
+                                    dr["CTYPE"] = _Customer.CustomerType;
+                                    dr["P&L"] = _Customer.Company;
+                                    dr["DateOrder"] = PODate.DateOrder.Date;
+                                    dr["QuantityOrder"] = _CustomerOrder.QuantityOrder;
+                                    dr["DateReceive"] = _Customer.CustomerBigRegion == "Miền Nam"
+                                        ? PODate.DateOrder.Date.AddDays(1)
+                                        : PODate.DateOrder.Date;
 
-                            dtPO.Rows.Add(dr);
-                        }
-                        else
-                        {
-                            dr = dtPO.Rows[_rowIndex];
-                            dr["QuantityOrder"] = (double) dr["QuantityOrder"] + _CustomerOrder.QuantityOrder;
-                        }
-                    }
+                                    dtPO.Rows.Add(dr);
+                                }
+                                else
+                                {
+                                    dr = dtPO.Rows[_rowIndex];
+                                    dr["QuantityOrder"] = (double)dr["QuantityOrder"] + _CustomerOrder.QuantityOrder;
+                                }
+                            }
                 }
 
                 //Excel.Application xlApp = new Excel.Application();
@@ -568,15 +568,15 @@ namespace ChiaHang
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
 
-                if (SupplierType == "VCM" && (string) ListRegion[index, 0] != (string) ListRegion[index, 1])
+                if (SupplierType == "VCM" && (string)ListRegion[index, 0] != (string)ListRegion[index, 1])
                     continue;
 
                 //Thread newThread = new Thread(() => Coord(coreStructure, (string)ListRegion[index, 0], (string)ListRegion[index, 1], SupplierType, (byte)ListRegion[index, 2], (byte)ListRegion[index, 3], UpperLimit, (bool)ListRegion[index, 4], PriorityTarget, YesNoByUnit, YesNoContracted, YesNoKPI));
                 //newThread.Start();
                 //newThread.Join();
 
-                Coord(coreStructure, (string) ListRegion[index, 0], (string) ListRegion[index, 1], SupplierType,
-                    (byte) ListRegion[index, 2], (byte) ListRegion[index, 3], UpperLimit, (bool) ListRegion[index, 4],
+                Coord(coreStructure, (string)ListRegion[index, 0], (string)ListRegion[index, 1], SupplierType,
+                    (byte)ListRegion[index, 2], (byte)ListRegion[index, 3], UpperLimit, (bool)ListRegion[index, 4],
                     PriorityTarget, YesNoByUnit, YesNoContracted, YesNoKPI);
 
                 stopwatch.Stop();
@@ -1466,9 +1466,9 @@ namespace ChiaHang
                 // Well, more like hiding what I have done >:D
 
                 foreach (var VmpVinEco in coreStructure.dicCustomer.Values.Where(x => x.CustomerType == "VM+ VinEco"))
-                foreach (var SiteToChange in coreStructure.dicCustomer.Values.Where(x =>
-                    x.CustomerCode == VmpVinEco.CustomerCode))
-                    SiteToChange.CustomerType = VmpVinEco.CustomerType;
+                    foreach (var SiteToChange in coreStructure.dicCustomer.Values.Where(x =>
+                        x.CustomerCode == VmpVinEco.CustomerCode))
+                        SiteToChange.CustomerType = VmpVinEco.CustomerType;
 
                 foreach (var _Customer in coreStructure.dicCustomer.Values)
                     if (_Customer.CustomerType == "B2B")
@@ -1478,15 +1478,15 @@ namespace ChiaHang
 
                 // Dealing with stubborn Procuring Forcasts.
                 foreach (var DateFC in coreStructure.dicFC.Keys.OrderBy(x => x.Date))
-                foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                {
-                    var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                        coreStructure.dicSupplier[x.SupplierId].SupplierType != "VinEco");
-                    if (_ListSupplier != null)
-                        foreach (var _SupplierForecast in _ListSupplier.Reverse())
-                            if (_SupplierForecast.QuantityForecastPlanned == null)
-                                coreStructure.dicFC[DateFC][_Product].Remove(_SupplierForecast);
-                }
+                    foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                    {
+                        var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                            coreStructure.dicSupplier[x.SupplierId].SupplierType != "VinEco");
+                        if (_ListSupplier != null)
+                            foreach (var _SupplierForecast in _ListSupplier.Reverse())
+                                if (_SupplierForecast.QuantityForecastPlanned == null)
+                                    coreStructure.dicFC[DateFC][_Product].Remove(_SupplierForecast);
+                    }
 
                 var _dateBase = new DateTime(1900, 1, 1);
 
@@ -1518,117 +1518,117 @@ namespace ChiaHang
                     dicRow = new Dictionary<string, int>();
 
                     foreach (var DatePO in coreStructure.dicCoord.Keys)
-                    foreach (var _Product in coreStructure.dicCoord[DatePO].Keys)
-                    foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys)
-                        if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
-                        {
-                            foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product][_CustomerOrder]
-                                .Keys.OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierType))
-                            {
-                                DataRow dr = null;
-
-                                var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
-                                var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
-
-                                var sKey = DatePO.Date + _Product.ProductCode + _Customer.CustomerType +
-                                           _Customer.CustomerRegion;
-                                var newRow = false;
-
-                                var _rowPos = 0;
-                                if (dicRow.TryGetValue(sKey, out _rowPos))
+                        foreach (var _Product in coreStructure.dicCoord[DatePO].Keys)
+                            foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys)
+                                if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
                                 {
-                                    dr = dtMastah.Rows[_rowPos];
+                                    foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product][_CustomerOrder]
+                                        .Keys.OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierType))
+                                    {
+                                        DataRow dr = null;
+
+                                        var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
+                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+
+                                        var sKey = DatePO.Date + _Product.ProductCode + _Customer.CustomerType +
+                                                   _Customer.CustomerRegion;
+                                        var newRow = false;
+
+                                        var _rowPos = 0;
+                                        if (dicRow.TryGetValue(sKey, out _rowPos))
+                                        {
+                                            dr = dtMastah.Rows[_rowPos];
+                                        }
+                                        else
+                                        {
+                                            dr = dtMastah.NewRow();
+                                            _rowPos = dtMastah.Rows.Count;
+                                            dicRow.Add(sKey, _rowPos);
+                                            newRow = true;
+                                        }
+
+                                        dr["Mã VinEco"] = _Product.ProductCode;
+                                        dr["Tên VinEco"] = _Product.ProductName;
+                                        dr["Loại cửa hàng"] = _Customer.CustomerType;
+                                        dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
+                                        dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
+                                        dr["Tỉnh tiêu thụ"] = _Customer.CustomerRegion;
+
+                                        //dr["NoSup"] = "";
+
+                                        //string productClass = "";
+                                        //if (!dicClass.TryGetValue(_Product.ProductCode.Substring(0, 1), out productClass))
+                                        //{
+                                        //    productClass = "???";
+                                        //}
+                                        dr["Class"] = _Product.ProductClassification;
+
+                                        //dr["DS1"] = "";
+                                        //dr["Region"] = "";
+                                        //dr["Bắt buộc?"] = "";
+
+                                        dr["VCM"] = (double)dr["VCM"] + _CustomerOrder.QuantityOrderKg;
+                                        if (_Supplier.SupplierType == "VinEco")
+                                            dr["VE"] = (double)dr["VE"] + _SupplierForecast.QuantityForecast;
+                                        else if (_Supplier.SupplierType == "ThuMua")
+                                            dr["TM"] = (double)dr["TM"] + _SupplierForecast.QuantityForecast;
+
+                                        if (newRow)
+                                            dtMastah.Rows.Add(dr);
+                                    }
                                 }
                                 else
                                 {
-                                    dr = dtMastah.NewRow();
-                                    _rowPos = dtMastah.Rows.Count;
-                                    dicRow.Add(sKey, _rowPos);
-                                    newRow = true;
+                                    DataRow dr = null;
+
+                                    var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
+
+                                    var sKey = DatePO.Date + _Product.ProductCode + _Customer.CustomerType +
+                                               _Customer.CustomerRegion;
+                                    var newRow = false;
+
+                                    var _rowPos = 0;
+                                    if (dicRow.TryGetValue(sKey, out _rowPos))
+                                    {
+                                        dr = dtMastah.Rows[_rowPos];
+                                    }
+                                    else
+                                    {
+                                        dr = dtMastah.NewRow();
+                                        _rowPos = dtMastah.Rows.Count;
+                                        dicRow.Add(sKey, _rowPos);
+                                        newRow = true;
+                                    }
+
+                                    dr["Mã VinEco"] = _Product.ProductCode;
+                                    dr["Tên VinEco"] = _Product.ProductName;
+                                    dr["Loại cửa hàng"] = _Customer.CustomerType;
+                                    dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
+                                    dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
+                                    dr["Tỉnh tiêu thụ"] = _Customer.CustomerRegion;
+
+                                    //dr["NoSup"] = "";
+
+                                    //string productClass = "";
+                                    //if (!dicClass.TryGetValue(_Product.ProductCode.Substring(0, 1), out productClass))
+                                    //{
+                                    //    productClass = "???";
+                                    //}
+                                    dr["Class"] = _Product.ProductClassification;
+
+                                    //dr["DS1"] = "";
+                                    //dr["Region"] = "";
+                                    //dr["Bắt buộc?"] = "";
+
+                                    dr["VCM"] = (double)dr["VCM"] + _CustomerOrder.QuantityOrderKg;
+
+
+                                    if (newRow)
+                                        dtMastah.Rows.Add(dr);
                                 }
 
-                                dr["Mã VinEco"] = _Product.ProductCode;
-                                dr["Tên VinEco"] = _Product.ProductName;
-                                dr["Loại cửa hàng"] = _Customer.CustomerType;
-                                dr["Ngày tiêu thụ"] = (int) (DatePO.Date - _dateBase).TotalDays + 2;
-                                dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
-                                dr["Tỉnh tiêu thụ"] = _Customer.CustomerRegion;
-
-                                //dr["NoSup"] = "";
-
-                                //string productClass = "";
-                                //if (!dicClass.TryGetValue(_Product.ProductCode.Substring(0, 1), out productClass))
-                                //{
-                                //    productClass = "???";
-                                //}
-                                dr["Class"] = _Product.ProductClassification;
-
-                                //dr["DS1"] = "";
-                                //dr["Region"] = "";
-                                //dr["Bắt buộc?"] = "";
-
-                                dr["VCM"] = (double) dr["VCM"] + _CustomerOrder.QuantityOrderKg;
-                                if (_Supplier.SupplierType == "VinEco")
-                                    dr["VE"] = (double) dr["VE"] + _SupplierForecast.QuantityForecast;
-                                else if (_Supplier.SupplierType == "ThuMua")
-                                    dr["TM"] = (double) dr["TM"] + _SupplierForecast.QuantityForecast;
-
-                                if (newRow)
-                                    dtMastah.Rows.Add(dr);
-                            }
-                        }
-                        else
-                        {
-                            DataRow dr = null;
-
-                            var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
-
-                            var sKey = DatePO.Date + _Product.ProductCode + _Customer.CustomerType +
-                                       _Customer.CustomerRegion;
-                            var newRow = false;
-
-                            var _rowPos = 0;
-                            if (dicRow.TryGetValue(sKey, out _rowPos))
-                            {
-                                dr = dtMastah.Rows[_rowPos];
-                            }
-                            else
-                            {
-                                dr = dtMastah.NewRow();
-                                _rowPos = dtMastah.Rows.Count;
-                                dicRow.Add(sKey, _rowPos);
-                                newRow = true;
-                            }
-
-                            dr["Mã VinEco"] = _Product.ProductCode;
-                            dr["Tên VinEco"] = _Product.ProductName;
-                            dr["Loại cửa hàng"] = _Customer.CustomerType;
-                            dr["Ngày tiêu thụ"] = (int) (DatePO.Date - _dateBase).TotalDays + 2;
-                            dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
-                            dr["Tỉnh tiêu thụ"] = _Customer.CustomerRegion;
-
-                            //dr["NoSup"] = "";
-
-                            //string productClass = "";
-                            //if (!dicClass.TryGetValue(_Product.ProductCode.Substring(0, 1), out productClass))
-                            //{
-                            //    productClass = "???";
-                            //}
-                            dr["Class"] = _Product.ProductClassification;
-
-                            //dr["DS1"] = "";
-                            //dr["Region"] = "";
-                            //dr["Bắt buộc?"] = "";
-
-                            dr["VCM"] = (double) dr["VCM"] + _CustomerOrder.QuantityOrderKg;
-
-
-                            if (newRow)
-                                dtMastah.Rows.Add(dr);
-                        }
-
                     foreach (DataRow dr in dtMastah.Rows)
-                        if ((double) dr["VCM"] > (double) dr["VE"] + (double) dr["TM"])
+                        if ((double)dr["VCM"] > (double)dr["VE"] + (double)dr["TM"])
                             dr["NoSup"] = "Yes";
 
                     #endregion
@@ -1648,31 +1648,31 @@ namespace ChiaHang
                     dtLeftoverVe.Columns.Add("Sản lượng", typeof(double)).DefaultValue = 0;
 
                     foreach (var DateFC in coreStructure.dicFC.Keys)
-                    foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                    {
-                        var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                            coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
-                        if (_ListSupplier != null)
-                            foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
-                                coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                if (_SupplierForecast.QuantityForecast > 0)
-                                {
-                                    var dr = dtLeftoverVe.NewRow();
+                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                        {
+                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
+                            if (_ListSupplier != null)
+                                foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
+                                    coreStructure.dicSupplier[x.SupplierId].SupplierName))
+                                    if (_SupplierForecast.QuantityForecast > 0)
+                                    {
+                                        var dr = dtLeftoverVe.NewRow();
 
-                                    //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                    var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                    dr["Mã VinEco"] = _Product.ProductCode;
-                                    dr["Tên VinEco"] = _Product.ProductName;
-                                    dr["Mã Farm"] = _Supplier.SupplierCode;
-                                    dr["Tên Farm"] = _Supplier.SupplierName;
-                                    dr["Ngày thu hoạch"] = (int) (DateFC.Date - _dateBase).TotalDays + 2;
-                                    dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                    dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
+                                        dr["Mã VinEco"] = _Product.ProductCode;
+                                        dr["Tên VinEco"] = _Product.ProductName;
+                                        dr["Mã Farm"] = _Supplier.SupplierCode;
+                                        dr["Tên Farm"] = _Supplier.SupplierName;
+                                        dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
+                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                        dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
 
-                                    dtLeftoverVe.Rows.Add(dr);
-                                }
-                    }
+                                        dtLeftoverVe.Rows.Add(dr);
+                                    }
+                        }
 
                     #endregion
 
@@ -1691,31 +1691,31 @@ namespace ChiaHang
                     dtLeftoverTm.Columns.Add("Sản lượng", typeof(double)).DefaultValue = 0;
 
                     foreach (var DateFC in coreStructure.dicFC.Keys)
-                    foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                    {
-                        var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                            coreStructure.dicSupplier[x.SupplierId].SupplierType == "ThuMua");
-                        if (_ListSupplier != null)
-                            foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
-                                coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                if (_SupplierForecast.QuantityForecast > 0)
-                                {
-                                    var dr = dtLeftoverTm.NewRow();
+                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                        {
+                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                coreStructure.dicSupplier[x.SupplierId].SupplierType == "ThuMua");
+                            if (_ListSupplier != null)
+                                foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
+                                    coreStructure.dicSupplier[x.SupplierId].SupplierName))
+                                    if (_SupplierForecast.QuantityForecast > 0)
+                                    {
+                                        var dr = dtLeftoverTm.NewRow();
 
-                                    //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                    var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                    dr["Mã VinEco"] = _Product.ProductCode;
-                                    dr["Tên VinEco"] = _Product.ProductName;
-                                    dr["Mã Farm"] = _Supplier.SupplierCode;
-                                    dr["Tên Farm"] = _Supplier.SupplierName;
-                                    dr["Ngày thu hoạch"] = (int) (DateFC.Date - _dateBase).TotalDays + 2;
-                                    dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                    dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
+                                        dr["Mã VinEco"] = _Product.ProductCode;
+                                        dr["Tên VinEco"] = _Product.ProductName;
+                                        dr["Mã Farm"] = _Supplier.SupplierCode;
+                                        dr["Tên Farm"] = _Supplier.SupplierName;
+                                        dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
+                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                        dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
 
-                                    dtLeftoverTm.Rows.Add(dr);
-                                }
-                    }
+                                        dtLeftoverTm.Rows.Add(dr);
+                                    }
+                        }
 
                     #endregion
 
@@ -1770,24 +1770,62 @@ namespace ChiaHang
                     dicRow = new Dictionary<string, int>();
 
                     foreach (var DatePO in coreStructure.dicCoord.Keys)
-                    foreach (var _Product in coreStructure.dicCoord[DatePO].Keys)
-                    foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys)
-                        if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
-                        {
-                            foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product][_CustomerOrder]
-                                .Keys.OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierType))
-                                if (_SupplierForecast.QuantityForecast < _CustomerOrder.QuantityOrderKg)
+                        foreach (var _Product in coreStructure.dicCoord[DatePO].Keys)
+                            foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys)
+                                if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
+                                {
+                                    foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product][_CustomerOrder]
+                                        .Keys.OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierType))
+                                        if (_SupplierForecast.QuantityForecast < _CustomerOrder.QuantityOrderKg)
+                                        {
+                                            var dr = dtMastah.NewRow();
+
+                                            var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
+                                            var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+
+                                            dr["Mã VinEco"] = _Product.ProductCode;
+                                            dr["Tên VinEco"] = _Product.ProductName;
+                                            dr["Mã cửa hàng"] = _Customer.CustomerCode;
+                                            dr["Loại cửa hàng"] = _Customer.CustomerType;
+                                            dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
+                                            dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
+                                            dr["Tỉnh tiêu thụ"] = _Customer.CustomerRegion;
+
+                                            //dr["NoSup"] = "";
+
+                                            //string productClass = "";
+                                            //if (!dicClass.TryGetValue(_Product.ProductCode.Substring(0, 1), out productClass))
+                                            //{
+                                            //    productClass = "???";
+                                            //}
+                                            dr["Class"] = _Product.ProductClassification;
+
+                                            //dr["DS1"] = "";
+                                            //dr["Region"] = "";
+                                            //dr["Bắt buộc?"] = "";
+
+                                            dr["VCM"] = _CustomerOrder.QuantityOrderKg - _SupplierForecast.QuantityForecast;
+                                            //switch (_Supplier.SupplierType)
+                                            //{
+                                            //    case "VinEco": dr["VE"] = _SupplierForecast.QuantityForecast; break;
+                                            //    case "ThuMua": dr["TM"] = _SupplierForecast.QuantityForecast; break;
+                                            //    default: break;
+                                            //}
+
+                                            dtMastah.Rows.Add(dr);
+                                        }
+                                }
+                                else
                                 {
                                     var dr = dtMastah.NewRow();
 
                                     var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
-                                    var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
                                     dr["Mã VinEco"] = _Product.ProductCode;
                                     dr["Tên VinEco"] = _Product.ProductName;
                                     dr["Mã cửa hàng"] = _Customer.CustomerCode;
                                     dr["Loại cửa hàng"] = _Customer.CustomerType;
-                                    dr["Ngày tiêu thụ"] = (int) (DatePO.Date - _dateBase).TotalDays + 2;
+                                    dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
                                     dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
                                     dr["Tỉnh tiêu thụ"] = _Customer.CustomerRegion;
 
@@ -1804,50 +1842,12 @@ namespace ChiaHang
                                     //dr["Region"] = "";
                                     //dr["Bắt buộc?"] = "";
 
-                                    dr["VCM"] = _CustomerOrder.QuantityOrderKg - _SupplierForecast.QuantityForecast;
-                                    //switch (_Supplier.SupplierType)
-                                    //{
-                                    //    case "VinEco": dr["VE"] = _SupplierForecast.QuantityForecast; break;
-                                    //    case "ThuMua": dr["TM"] = _SupplierForecast.QuantityForecast; break;
-                                    //    default: break;
-                                    //}
+                                    dr["VCM"] = _CustomerOrder.QuantityOrderKg;
 
                                     dtMastah.Rows.Add(dr);
                                 }
-                        }
-                        else
-                        {
-                            var dr = dtMastah.NewRow();
 
-                            var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
-
-                            dr["Mã VinEco"] = _Product.ProductCode;
-                            dr["Tên VinEco"] = _Product.ProductName;
-                            dr["Mã cửa hàng"] = _Customer.CustomerCode;
-                            dr["Loại cửa hàng"] = _Customer.CustomerType;
-                            dr["Ngày tiêu thụ"] = (int) (DatePO.Date - _dateBase).TotalDays + 2;
-                            dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
-                            dr["Tỉnh tiêu thụ"] = _Customer.CustomerRegion;
-
-                            //dr["NoSup"] = "";
-
-                            //string productClass = "";
-                            //if (!dicClass.TryGetValue(_Product.ProductCode.Substring(0, 1), out productClass))
-                            //{
-                            //    productClass = "???";
-                            //}
-                            dr["Class"] = _Product.ProductClassification;
-
-                            //dr["DS1"] = "";
-                            //dr["Region"] = "";
-                            //dr["Bắt buộc?"] = "";
-
-                            dr["VCM"] = _CustomerOrder.QuantityOrderKg;
-
-                            dtMastah.Rows.Add(dr);
-                        }
-
-                    var dtNoSup = new DataTable {TableName = "NoSup"};
+                    var dtNoSup = new DataTable { TableName = "NoSup" };
 
                     dtNoSup.Columns.Add("Mã VinEco", typeof(string)).DefaultValue = "";
                     dtNoSup.Columns.Add("Tên VinEco", typeof(string)).DefaultValue = "";
@@ -1897,31 +1897,31 @@ namespace ChiaHang
                     dtLeftoverVe.Columns.Add("Sản lượng", typeof(double)).DefaultValue = 0;
 
                     foreach (var DateFC in coreStructure.dicFC.Keys)
-                    foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                    {
-                        var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                            coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
-                        if (_ListSupplier != null)
-                            foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
-                                coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                if (_SupplierForecast.QuantityForecast > 3)
-                                {
-                                    var dr = dtLeftoverVe.NewRow();
+                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                        {
+                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
+                            if (_ListSupplier != null)
+                                foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
+                                    coreStructure.dicSupplier[x.SupplierId].SupplierName))
+                                    if (_SupplierForecast.QuantityForecast > 3)
+                                    {
+                                        var dr = dtLeftoverVe.NewRow();
 
-                                    //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                    var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                    dr["Mã VinEco"] = _Product.ProductCode;
-                                    dr["Tên VinEco"] = _Product.ProductName;
-                                    dr["Mã Farm"] = _Supplier.SupplierCode;
-                                    dr["Tên Farm"] = _Supplier.SupplierName;
-                                    dr["Ngày thu hoạch"] = (int) (DateFC.Date - _dateBase).TotalDays + 2;
-                                    dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                    dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
+                                        dr["Mã VinEco"] = _Product.ProductCode;
+                                        dr["Tên VinEco"] = _Product.ProductName;
+                                        dr["Mã Farm"] = _Supplier.SupplierCode;
+                                        dr["Tên Farm"] = _Supplier.SupplierName;
+                                        dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
+                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                        dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
 
-                                    dtLeftoverVe.Rows.Add(dr);
-                                }
-                    }
+                                        dtLeftoverVe.Rows.Add(dr);
+                                    }
+                        }
 
                     #endregion
 
@@ -1940,32 +1940,32 @@ namespace ChiaHang
                     dtLeftoverTm.Columns.Add("Sản lượng", typeof(double)).DefaultValue = 0;
 
                     foreach (var DateFC in coreStructure.dicFC.Keys)
-                    foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                    {
-                        var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                            coreStructure.dicSupplier[x.SupplierId].SupplierType == "ThuMua");
-                        if (_ListSupplier != null)
-                            foreach (var _SupplierForecast in _ListSupplier
-                                .Where(x => x.QuantityForecastPlanned != null).OrderBy(x =>
-                                    coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                if (_SupplierForecast.QuantityForecast > 0)
-                                {
-                                    var dr = dtLeftoverTm.NewRow();
+                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                        {
+                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                coreStructure.dicSupplier[x.SupplierId].SupplierType == "ThuMua");
+                            if (_ListSupplier != null)
+                                foreach (var _SupplierForecast in _ListSupplier
+                                    .Where(x => x.QuantityForecastPlanned != null).OrderBy(x =>
+                                        coreStructure.dicSupplier[x.SupplierId].SupplierName))
+                                    if (_SupplierForecast.QuantityForecast > 0)
+                                    {
+                                        var dr = dtLeftoverTm.NewRow();
 
-                                    //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                    var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                    dr["Mã VinEco"] = _Product.ProductCode;
-                                    dr["Tên VinEco"] = _Product.ProductName;
-                                    dr["Mã Farm"] = _Supplier.SupplierCode;
-                                    dr["Tên Farm"] = _Supplier.SupplierName;
-                                    dr["Ngày thu hoạch"] = (int) (DateFC.Date - _dateBase).TotalDays + 2;
-                                    dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                    dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
+                                        dr["Mã VinEco"] = _Product.ProductCode;
+                                        dr["Tên VinEco"] = _Product.ProductName;
+                                        dr["Mã Farm"] = _Supplier.SupplierCode;
+                                        dr["Tên Farm"] = _Supplier.SupplierName;
+                                        dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
+                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                        dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
 
-                                    dtLeftoverTm.Rows.Add(dr);
-                                }
-                    }
+                                        dtLeftoverTm.Rows.Add(dr);
+                                    }
+                        }
 
                     #endregion
 
@@ -2053,7 +2053,7 @@ namespace ChiaHang
 
                         #region Mastah Table
 
-                        var dtMastah = new DataTable {TableName = "Mastah"};
+                        var dtMastah = new DataTable { TableName = "Mastah" };
 
                         dtMastah.Columns.Add("Mã 6 ký tự", typeof(string));
                         dtMastah.Columns.Add("Mã thành phẩm VinEco", typeof(string));
@@ -2106,29 +2106,137 @@ namespace ChiaHang
 
                         foreach (var DatePO in coreStructure.dicCoord.Keys.OrderBy(x => x.Date)
                             .Where(x => x.Date >= DateFrom.AddDays(dayDistance).Date))
-                        foreach (var _Product in coreStructure.dicCoord[DatePO].Keys.OrderBy(x => x.ProductCode))
-                        foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys
-                            .Where(x => x.QuantityOrderKg > 0)
-                            .OrderBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerType)
-                            .ThenBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerCode))
-                            if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
-                            {
-                                foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product]
-                                    [_CustomerOrder].Keys.OrderBy(x =>
-                                        coreStructure.dicSupplier[x.SupplierId].SupplierType))
-                                {
-                                    var dr = dtMastah.NewRow();
-
-                                    var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
-                                    var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
-
-                                    ProductUnitRegion _ProductUnitRegion = null;
-                                    if (coreStructure.dicProductUnit.TryGetValue(_Product.ProductCode,
-                                        out var _ProductUnit))
+                            foreach (var _Product in coreStructure.dicCoord[DatePO].Keys.OrderBy(x => x.ProductCode))
+                                foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys
+                                    .Where(x => x.QuantityOrderKg > 0)
+                                    .OrderBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerType)
+                                    .ThenBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerCode))
+                                    if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
                                     {
-                                        _ProductUnitRegion = coreStructure.dicProductUnit[_Product.ProductCode]
-                                            .ListRegion.FirstOrDefault(x => x.OrderUnitType == _CustomerOrder.Unit);
-                                        if (_ProductUnitRegion == null)
+                                        foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product]
+                                            [_CustomerOrder].Keys.OrderBy(x =>
+                                                coreStructure.dicSupplier[x.SupplierId].SupplierType))
+                                        {
+                                            var dr = dtMastah.NewRow();
+
+                                            var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
+                                            var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+
+                                            ProductUnitRegion _ProductUnitRegion = null;
+                                            if (coreStructure.dicProductUnit.TryGetValue(_Product.ProductCode,
+                                                out var _ProductUnit))
+                                            {
+                                                _ProductUnitRegion = coreStructure.dicProductUnit[_Product.ProductCode]
+                                                    .ListRegion.FirstOrDefault(x => x.OrderUnitType == _CustomerOrder.Unit);
+                                                if (_ProductUnitRegion == null)
+                                                    _ProductUnitRegion = new ProductUnitRegion
+                                                    {
+                                                        OrderUnitType = "Kg",
+                                                        OrderUnitPer = 1,
+                                                        SaleUnitType = "Kg",
+                                                        SaleUnitPer = 1
+                                                    };
+                                            }
+                                            else
+                                            {
+                                                _ProductUnitRegion = new ProductUnitRegion
+                                                {
+                                                    OrderUnitType = "Kg",
+                                                    OrderUnitPer = 1,
+                                                    SaleUnitType = "Kg",
+                                                    SaleUnitPer = 1
+                                                };
+                                            }
+
+                                            dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                            dr["Mã thành phẩm VinEco"] = _Product.ProductCode;
+                                            //dr["Mã thành phẩm VinCommerce"] = "";
+                                            dr["P&L"] = _Customer.Company;
+                                            dr["Tên Sản phẩm"] = _Product.ProductName;
+                                            dr["Mã Cửa hàng"] = _Customer.CustomerCode;
+                                            dr["Tên Cửa hàng"] = _Customer.CustomerName;
+                                            dr["Loại Cửa hàng"] = _Customer.CustomerType;
+                                            dr["Ngày Tiêu thụ"] = DatePO.Date;
+                                            dr["Vùng Tiêu thụ"] = _Customer.CustomerBigRegion == "Miền Bắc" ? "MB" : "MN";
+                                            dr["Nhu cầu Kg VinCommerce"] = _CustomerOrder.QuantityOrderKg;
+
+                                            //dr["Số lượng đặt"] = _CustomerOrder.QuantityOrder;
+                                            //dr["Đơn vị đặt"] = _CustomerOrder.Unit;
+                                            //dr["Đặt Kg/Unit"] = _ProductUnitRegion.OrderUnitPer;
+
+                                            //dr["Số lượng bán"] = (double)_SupplierForecast.QuantityForecast / (double)_ProductUnitRegion.SaleUnitPer;
+                                            //dr["Số lượng bán"] = String.Format("= N{0} * Q{0}", dtMastah.Rows.Count + 6);
+                                            //dr["Đơn vị bán"] = _ProductUnitRegion.SaleUnitType;
+                                            //dr["Bán Kg/Unit"] = _ProductUnitRegion.SaleUnitPer;
+
+                                            dr["Nhu cầu Kg Đã đáp ứng"] = string.Format(
+                                                "=SUM( M{0}, P{0}, S{0}, V{0}, Y{0}, AB{0} )", dtMastah.Rows.Count + 6);
+                                            //dr["Nhu cầu Kg Đã đáp ứng"] = String.Format("=SUM( S{0}, V{0}, Y{0}, AB{0}, AF{0}, AJ{0} )", dtMastah.Rows.Count + 6);
+                                            //dr["Nhu cầu Kg Đã đáp ứng"] = (double)dr["Nhu cầu Kg Đã đáp ứng"] + _CustomerOrder.QuantityOrderKg;
+
+                                            var _Region = string.Join(string.Empty,
+                                                _Supplier.SupplierRegion.Where((ch, index) =>
+                                                    ch != ' ' && (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
+                                            switch (_Supplier.SupplierType)
+                                            {
+                                                case "VinEco":
+                                                    dr["Tên VinEco " + _Region] = _Supplier.SupplierName;
+                                                    dr["Đáp ứng từ VinEco " + _Region] = _SupplierForecast.QuantityForecast;
+                                                    dr["Ngày sơ chế VinEco " + _Region] =
+                                                        coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][
+                                                            _SupplierForecast].Date;
+                                                    break;
+                                                case "ThuMua":
+                                                    dr["Tên ThuMua " + _Region] = _Supplier.SupplierName;
+                                                    dr["Đáp ứng từ ThuMua " + _Region] = _SupplierForecast.QuantityForecast;
+                                                    dr["Ngày sơ chế ThuMua " + _Region] =
+                                                        coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][
+                                                            _SupplierForecast].Date;
+                                                    //dr["Giá mua ThuMua " + _Region] = 0;
+                                                    break;
+                                                case "VCM":
+                                                    dr["Tên ThuMua " + _Region] = "VCM - " + _Supplier.SupplierName;
+                                                    dr["Đáp ứng từ ThuMua " + _Region] = _SupplierForecast.QuantityForecast;
+                                                    dr["Ngày sơ chế ThuMua " + _Region] =
+                                                        coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][
+                                                            _SupplierForecast].Date;
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+
+                                            dtMastah.Rows.Add(dr);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (_Product.ProductCode.Substring(0, 1) != "K" &&
+                                            _Product.ProductCode.Substring(0, 1) != "D" &&
+                                            (DatePO >= DateTo.AddDays(-1) || DatePO < DateFrom))
+                                            continue;
+
+                                        var dr = dtMastah.NewRow();
+
+                                        var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
+                                        //Supplier _Supplier =coreStructure. dicSupplier[_SupplierForecast.SupplierId];
+
+                                        ProductUnitRegion _ProductUnitRegion = null;
+                                        if (coreStructure.dicProductUnit.TryGetValue(_Product.ProductCode,
+                                            out var _ProductUnit))
+                                        {
+                                            _ProductUnitRegion = coreStructure.dicProductUnit[_Product.ProductCode].ListRegion
+                                                .FirstOrDefault(x => x.OrderUnitType == _CustomerOrder.Unit);
+                                            if (_ProductUnitRegion == null)
+                                                _ProductUnitRegion = new ProductUnitRegion
+                                                {
+                                                    OrderUnitType = "Kg",
+                                                    OrderUnitPer = 1,
+                                                    SaleUnitType = "Kg",
+                                                    SaleUnitPer = 1
+                                                };
+                                        }
+                                        else
+                                        {
                                             _ProductUnitRegion = new ProductUnitRegion
                                             {
                                                 OrderUnitType = "Kg",
@@ -2136,151 +2244,43 @@ namespace ChiaHang
                                                 SaleUnitType = "Kg",
                                                 SaleUnitPer = 1
                                             };
+                                        }
+
+                                        dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                        dr["Mã thành phẩm VinEco"] = _Product.ProductCode;
+                                        //dr["Mã thành phẩm VinCommerce"] = "";
+                                        dr["P&L"] = _Customer.Company;
+                                        dr["Tên Sản phẩm"] = _Product.ProductName;
+                                        dr["Mã Cửa hàng"] = _Customer.CustomerCode;
+                                        dr["Tên Cửa hàng"] = _Customer.CustomerName;
+                                        dr["Loại Cửa hàng"] = _Customer.CustomerType;
+                                        dr["Ngày Tiêu thụ"] = DatePO.Date;
+                                        dr["Vùng Tiêu thụ"] = _Customer.CustomerBigRegion == "Miền Bắc" ? "MB" : "MN";
+                                        dr["Nhu cầu Kg VinCommerce"] = _CustomerOrder.QuantityOrderKg;
+
+                                        //dr["Số lượng đặt"] = _CustomerOrder.QuantityOrder;
+                                        //dr["Đơn vị đặt"] = _CustomerOrder.Unit;
+                                        //dr["Đặt Kg/Unit"] = _ProductUnitRegion.OrderUnitPer;
+
+                                        //dr["Số lượng bán"] = (double)_SupplierForecast.QuantityForecast / (double)_ProductUnitRegion.SaleUnitPer;
+                                        //dr["Số lượng bán"] = String.Format("= N{0} * Q{0}", dtMastah.Rows.Count + 6);
+                                        //dr["Đơn vị bán"] = _ProductUnitRegion.SaleUnitType;
+                                        //dr["Bán Kg/Unit"] = _ProductUnitRegion.SaleUnitPer;
+
+                                        dr["Nhu cầu Kg Đã đáp ứng"] =
+                                            string.Format("=SUM( M{0}, P{0}, S{0}, V{0}, Y{0}, AB{0} )",
+                                                dtMastah.Rows.Count + 6);
+                                        //dr["Nhu cầu Kg Đã đáp ứng"] = String.Format("=SUM( S{0}, V{0}, Y{0}, AB{0}, AF{0}, AJ{0} )", dtMastah.Rows.Count + 6);
+                                        //dr["Nhu cầu Kg Đã đáp ứng"] = (double)dr["Nhu cầu Kg Đã đáp ứng"] + _CustomerOrder.QuantityOrderKg;
+
+                                        dtMastah.Rows.Add(dr);
                                     }
-                                    else
-                                    {
-                                        _ProductUnitRegion = new ProductUnitRegion
-                                        {
-                                            OrderUnitType = "Kg",
-                                            OrderUnitPer = 1,
-                                            SaleUnitType = "Kg",
-                                            SaleUnitPer = 1
-                                        };
-                                    }
-
-                                    dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                    dr["Mã thành phẩm VinEco"] = _Product.ProductCode;
-                                    //dr["Mã thành phẩm VinCommerce"] = "";
-                                    dr["P&L"] = _Customer.Company;
-                                    dr["Tên Sản phẩm"] = _Product.ProductName;
-                                    dr["Mã Cửa hàng"] = _Customer.CustomerCode;
-                                    dr["Tên Cửa hàng"] = _Customer.CustomerName;
-                                    dr["Loại Cửa hàng"] = _Customer.CustomerType;
-                                    dr["Ngày Tiêu thụ"] = DatePO.Date;
-                                    dr["Vùng Tiêu thụ"] = _Customer.CustomerBigRegion == "Miền Bắc" ? "MB" : "MN";
-                                    dr["Nhu cầu Kg VinCommerce"] = _CustomerOrder.QuantityOrderKg;
-
-                                    //dr["Số lượng đặt"] = _CustomerOrder.QuantityOrder;
-                                    //dr["Đơn vị đặt"] = _CustomerOrder.Unit;
-                                    //dr["Đặt Kg/Unit"] = _ProductUnitRegion.OrderUnitPer;
-
-                                    //dr["Số lượng bán"] = (double)_SupplierForecast.QuantityForecast / (double)_ProductUnitRegion.SaleUnitPer;
-                                    //dr["Số lượng bán"] = String.Format("= N{0} * Q{0}", dtMastah.Rows.Count + 6);
-                                    //dr["Đơn vị bán"] = _ProductUnitRegion.SaleUnitType;
-                                    //dr["Bán Kg/Unit"] = _ProductUnitRegion.SaleUnitPer;
-
-                                    dr["Nhu cầu Kg Đã đáp ứng"] = string.Format(
-                                        "=SUM( M{0}, P{0}, S{0}, V{0}, Y{0}, AB{0} )", dtMastah.Rows.Count + 6);
-                                    //dr["Nhu cầu Kg Đã đáp ứng"] = String.Format("=SUM( S{0}, V{0}, Y{0}, AB{0}, AF{0}, AJ{0} )", dtMastah.Rows.Count + 6);
-                                    //dr["Nhu cầu Kg Đã đáp ứng"] = (double)dr["Nhu cầu Kg Đã đáp ứng"] + _CustomerOrder.QuantityOrderKg;
-
-                                    var _Region = string.Join(string.Empty,
-                                        _Supplier.SupplierRegion.Where((ch, index) =>
-                                            ch != ' ' && (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
-                                    switch (_Supplier.SupplierType)
-                                    {
-                                        case "VinEco":
-                                            dr["Tên VinEco " + _Region] = _Supplier.SupplierName;
-                                            dr["Đáp ứng từ VinEco " + _Region] = _SupplierForecast.QuantityForecast;
-                                            dr["Ngày sơ chế VinEco " + _Region] =
-                                                coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][
-                                                    _SupplierForecast].Date;
-                                            break;
-                                        case "ThuMua":
-                                            dr["Tên ThuMua " + _Region] = _Supplier.SupplierName;
-                                            dr["Đáp ứng từ ThuMua " + _Region] = _SupplierForecast.QuantityForecast;
-                                            dr["Ngày sơ chế ThuMua " + _Region] =
-                                                coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][
-                                                    _SupplierForecast].Date;
-                                            //dr["Giá mua ThuMua " + _Region] = 0;
-                                            break;
-                                        case "VCM":
-                                            dr["Tên ThuMua " + _Region] = "VCM - " + _Supplier.SupplierName;
-                                            dr["Đáp ứng từ ThuMua " + _Region] = _SupplierForecast.QuantityForecast;
-                                            dr["Ngày sơ chế ThuMua " + _Region] =
-                                                coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][
-                                                    _SupplierForecast].Date;
-                                            break;
-                                        default:
-                                            break;
-                                    }
-
-                                    dtMastah.Rows.Add(dr);
-                                }
-                            }
-                            else
-                            {
-                                if (_Product.ProductCode.Substring(0, 1) != "K" &&
-                                    _Product.ProductCode.Substring(0, 1) != "D" &&
-                                    (DatePO >= DateTo.AddDays(-1) || DatePO < DateFrom))
-                                    continue;
-
-                                var dr = dtMastah.NewRow();
-
-                                var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
-                                //Supplier _Supplier =coreStructure. dicSupplier[_SupplierForecast.SupplierId];
-
-                                ProductUnitRegion _ProductUnitRegion = null;
-                                if (coreStructure.dicProductUnit.TryGetValue(_Product.ProductCode,
-                                    out var _ProductUnit))
-                                {
-                                    _ProductUnitRegion = coreStructure.dicProductUnit[_Product.ProductCode].ListRegion
-                                        .FirstOrDefault(x => x.OrderUnitType == _CustomerOrder.Unit);
-                                    if (_ProductUnitRegion == null)
-                                        _ProductUnitRegion = new ProductUnitRegion
-                                        {
-                                            OrderUnitType = "Kg",
-                                            OrderUnitPer = 1,
-                                            SaleUnitType = "Kg",
-                                            SaleUnitPer = 1
-                                        };
-                                }
-                                else
-                                {
-                                    _ProductUnitRegion = new ProductUnitRegion
-                                    {
-                                        OrderUnitType = "Kg",
-                                        OrderUnitPer = 1,
-                                        SaleUnitType = "Kg",
-                                        SaleUnitPer = 1
-                                    };
-                                }
-
-                                dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                dr["Mã thành phẩm VinEco"] = _Product.ProductCode;
-                                //dr["Mã thành phẩm VinCommerce"] = "";
-                                dr["P&L"] = _Customer.Company;
-                                dr["Tên Sản phẩm"] = _Product.ProductName;
-                                dr["Mã Cửa hàng"] = _Customer.CustomerCode;
-                                dr["Tên Cửa hàng"] = _Customer.CustomerName;
-                                dr["Loại Cửa hàng"] = _Customer.CustomerType;
-                                dr["Ngày Tiêu thụ"] = DatePO.Date;
-                                dr["Vùng Tiêu thụ"] = _Customer.CustomerBigRegion == "Miền Bắc" ? "MB" : "MN";
-                                dr["Nhu cầu Kg VinCommerce"] = _CustomerOrder.QuantityOrderKg;
-
-                                //dr["Số lượng đặt"] = _CustomerOrder.QuantityOrder;
-                                //dr["Đơn vị đặt"] = _CustomerOrder.Unit;
-                                //dr["Đặt Kg/Unit"] = _ProductUnitRegion.OrderUnitPer;
-
-                                //dr["Số lượng bán"] = (double)_SupplierForecast.QuantityForecast / (double)_ProductUnitRegion.SaleUnitPer;
-                                //dr["Số lượng bán"] = String.Format("= N{0} * Q{0}", dtMastah.Rows.Count + 6);
-                                //dr["Đơn vị bán"] = _ProductUnitRegion.SaleUnitType;
-                                //dr["Bán Kg/Unit"] = _ProductUnitRegion.SaleUnitPer;
-
-                                dr["Nhu cầu Kg Đã đáp ứng"] =
-                                    string.Format("=SUM( M{0}, P{0}, S{0}, V{0}, Y{0}, AB{0} )",
-                                        dtMastah.Rows.Count + 6);
-                                //dr["Nhu cầu Kg Đã đáp ứng"] = String.Format("=SUM( S{0}, V{0}, Y{0}, AB{0}, AF{0}, AJ{0} )", dtMastah.Rows.Count + 6);
-                                //dr["Nhu cầu Kg Đã đáp ứng"] = (double)dr["Nhu cầu Kg Đã đáp ứng"] + _CustomerOrder.QuantityOrderKg;
-
-                                dtMastah.Rows.Add(dr);
-                            }
 
                         #endregion
 
                         #region LeftOverVinEco Table
 
-                        var dtLeftOverVE = new DataTable {TableName = "DBSL dư"};
+                        var dtLeftOverVE = new DataTable { TableName = "DBSL dư" };
 
                         dtLeftOverVE.Columns.Add("Mã 6 ký tự", typeof(string));
                         dtLeftOverVE.Columns.Add("Mã thành phẩm VinEco", typeof(string));
@@ -2316,66 +2316,66 @@ namespace ChiaHang
                         //dtLeftOverVE.Columns.Add("Giá mua ThuMua LĐ", typeof(double));
 
                         foreach (var DateFC in coreStructure.dicFC.Keys)
-                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                        {
-                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                                coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
-                            if (_ListSupplier != null)
-                                foreach (var _SupplierForecast in _ListSupplier.Where(x => x.QuantityForecast >= 3)
-                                    .OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                {
-                                    var dr = dtLeftOverVE.NewRow();
-
-                                    //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                    var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
-
-                                    dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                    dr["Mã thành phẩm VinEco"] = _Product.ProductCode;
-                                    dr["Mã thành phẩm VinCommerce"] = "";
-                                    dr["Tên Sản phẩm"] = _Product.ProductName;
-                                    //dr["Mã Cửa hàng"] = _Customer.CustomerCode;
-                                    //dr["Tên Cửa hàng"] = _Customer.CustomerName;
-                                    //dr["Loại Cửa hàng"] = _Customer.CustomerType;
-                                    //dr["Ngày Tiêu thụ"] = DatePO.Date;
-                                    //dr["Vùng Tiêu thụ"] = _Customer.CustomerBigRegion;
-                                    //dr["Nhu cầu VinCommerce"] = _CustomerOrder.QuantityOrder;
-                                    //dr["Nhu cầu Đã đáp ứng"] = String.Format("=SUM(M{0}, P{0}, S{0}, V{0}, Z{0}, AD{0})", dtLeftOverVE.Rows.Count + 6);
-
-                                    var _Region = string.Join(string.Empty,
-                                        _Supplier.SupplierRegion.Where((ch, index) =>
-                                            ch != ' ' && (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
-                                    switch (_Supplier.SupplierType)
+                            foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                            {
+                                var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                    coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
+                                if (_ListSupplier != null)
+                                    foreach (var _SupplierForecast in _ListSupplier.Where(x => x.QuantityForecast >= 3)
+                                        .OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierName))
                                     {
-                                        case "VinEco":
-                                            dr["Tên VinEco " + _Region] = _Supplier.SupplierName;
-                                            dr["Đáp ứng từ VinEco " + _Region] = _SupplierForecast.QuantityForecast;
-                                            dr["Ngày sơ chế VinEco " + _Region] = DateFC;
-                                            break;
-                                        case "ThuMua":
-                                            dr["Tên ThuMua " + _Region] = _Supplier.SupplierName;
-                                            dr["Đáp ứng từ ThuMua " + _Region] = _SupplierForecast.QuantityForecast;
-                                            dr["Ngày sơ chế ThuMua " + _Region] = DateFC;
-                                            //dr["Giá mua ThuMua " + _Region] = 0;
-                                            break;
-                                        default:
-                                            break;
+                                        var dr = dtLeftOverVE.NewRow();
+
+                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+
+                                        dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                        dr["Mã thành phẩm VinEco"] = _Product.ProductCode;
+                                        dr["Mã thành phẩm VinCommerce"] = "";
+                                        dr["Tên Sản phẩm"] = _Product.ProductName;
+                                        //dr["Mã Cửa hàng"] = _Customer.CustomerCode;
+                                        //dr["Tên Cửa hàng"] = _Customer.CustomerName;
+                                        //dr["Loại Cửa hàng"] = _Customer.CustomerType;
+                                        //dr["Ngày Tiêu thụ"] = DatePO.Date;
+                                        //dr["Vùng Tiêu thụ"] = _Customer.CustomerBigRegion;
+                                        //dr["Nhu cầu VinCommerce"] = _CustomerOrder.QuantityOrder;
+                                        //dr["Nhu cầu Đã đáp ứng"] = String.Format("=SUM(M{0}, P{0}, S{0}, V{0}, Z{0}, AD{0})", dtLeftOverVE.Rows.Count + 6);
+
+                                        var _Region = string.Join(string.Empty,
+                                            _Supplier.SupplierRegion.Where((ch, index) =>
+                                                ch != ' ' && (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
+                                        switch (_Supplier.SupplierType)
+                                        {
+                                            case "VinEco":
+                                                dr["Tên VinEco " + _Region] = _Supplier.SupplierName;
+                                                dr["Đáp ứng từ VinEco " + _Region] = _SupplierForecast.QuantityForecast;
+                                                dr["Ngày sơ chế VinEco " + _Region] = DateFC;
+                                                break;
+                                            case "ThuMua":
+                                                dr["Tên ThuMua " + _Region] = _Supplier.SupplierName;
+                                                dr["Đáp ứng từ ThuMua " + _Region] = _SupplierForecast.QuantityForecast;
+                                                dr["Ngày sơ chế ThuMua " + _Region] = DateFC;
+                                                //dr["Giá mua ThuMua " + _Region] = 0;
+                                                break;
+                                            default:
+                                                break;
+                                        }
+
+                                        //dr["VE Code"] = _Product.ProductCode;
+                                        //dr["VE Name"] = _Product.ProductName;
+
+                                        //Supplier _supplier =coreStructure. dicSupplier[_SupplierForecast.SupplierId];
+
+                                        //dr["SupplierCode"] = _supplier.SupplierCode;
+                                        //dr["SupplierName"] = _supplier.SupplierName;
+                                        //dr["SupplierRegion"] = _supplier.SupplierRegion;
+                                        //dr["SupplierType"] = _supplier.SupplierType;
+                                        //dr["QuantityForecast"] = _SupplierForecast.QuantityForecast;
+                                        //dr["DateForecast"] = DateFC;
+
+                                        dtLeftOverVE.Rows.Add(dr);
                                     }
-
-                                    //dr["VE Code"] = _Product.ProductCode;
-                                    //dr["VE Name"] = _Product.ProductName;
-
-                                    //Supplier _supplier =coreStructure. dicSupplier[_SupplierForecast.SupplierId];
-
-                                    //dr["SupplierCode"] = _supplier.SupplierCode;
-                                    //dr["SupplierName"] = _supplier.SupplierName;
-                                    //dr["SupplierRegion"] = _supplier.SupplierRegion;
-                                    //dr["SupplierType"] = _supplier.SupplierType;
-                                    //dr["QuantityForecast"] = _SupplierForecast.QuantityForecast;
-                                    //dr["DateForecast"] = DateFC;
-
-                                    dtLeftOverVE.Rows.Add(dr);
-                                }
-                        }
+                            }
 
                         var _rowCount = 6;
                         foreach (DataRow dr in dtLeftOverVE.Rows)
@@ -2491,7 +2491,7 @@ namespace ChiaHang
 
                         #region Customer Table
 
-                        var dtCustomer = new DataTable {TableName = "Region I guess"};
+                        var dtCustomer = new DataTable { TableName = "Region I guess" };
 
                         dtCustomer.Columns.Add("Mã cửa hàng", typeof(string));
                         dtCustomer.Columns.Add("Vùng đặt hàng", typeof(string));
@@ -2791,7 +2791,7 @@ namespace ChiaHang
                     }
                     if (!YesNoGroupFarm)
                     {
-                        var dtMastah = new DataTable {TableName = "Mastah"};
+                        var dtMastah = new DataTable { TableName = "Mastah" };
 
                         if (YesNoGroupThuMua)
                         {
@@ -2811,92 +2811,92 @@ namespace ChiaHang
 
                             dicRow = new Dictionary<string, int>();
                             foreach (var DatePO in coreStructure.dicCoord.Keys)
-                            foreach (var _Product in coreStructure.dicCoord[DatePO].Keys.OrderBy(x => x.ProductCode))
-                            foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys
-                                .OrderBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerType))
-                            {
-                                var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
-                                var sKey = string.Format("{0}{1}{2}{3}", DatePO.Date, _Customer.CustomerType,
-                                    _Customer.CustomerBigRegion, _Product.ProductCode);
-                                if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
-                                {
-                                    foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product]
-                                        [_CustomerOrder].Keys.OrderBy(x =>
-                                            coreStructure.dicSupplier[x.SupplierId].SupplierType))
+                                foreach (var _Product in coreStructure.dicCoord[DatePO].Keys.OrderBy(x => x.ProductCode))
+                                    foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys
+                                        .OrderBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerType))
                                     {
-                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
-
-                                        sKey += _Supplier.SupplierType;
-
-                                        DataRow dr = null;
-                                        var _rowIndex = 0;
-                                        if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                        var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
+                                        var sKey = string.Format("{0}{1}{2}{3}", DatePO.Date, _Customer.CustomerType,
+                                            _Customer.CustomerBigRegion, _Product.ProductCode);
+                                        if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
                                         {
-                                            dr = dtMastah.NewRow();
-                                            dicRow.Add(sKey, dtMastah.Rows.Count);
-                                            dtMastah.Rows.Add(dr);
-                                            dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
+                                            foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product]
+                                                [_CustomerOrder].Keys.OrderBy(x =>
+                                                    coreStructure.dicSupplier[x.SupplierId].SupplierType))
+                                            {
+                                                var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+
+                                                sKey += _Supplier.SupplierType;
+
+                                                DataRow dr = null;
+                                                var _rowIndex = 0;
+                                                if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                                {
+                                                    dr = dtMastah.NewRow();
+                                                    dicRow.Add(sKey, dtMastah.Rows.Count);
+                                                    dtMastah.Rows.Add(dr);
+                                                    dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
+                                                }
+                                                else
+                                                {
+                                                    dr = dtMastah.Rows[_rowIndex];
+                                                }
+
+                                                var _Region = string.Join(string.Empty,
+                                                    _Supplier.SupplierRegion.Where((ch, index) =>
+                                                        ch != ' ' &&
+                                                        (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
+                                                var _colName = string.Format("{0} {1}", _Supplier.SupplierType, _Region);
+
+                                                dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                                dr["Tên sản phẩm"] = _Product.ProductName;
+                                                dr["Loại cửa hàng"] = _Customer.CustomerType;
+                                                //dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
+                                                dr["Ngày tiêu thụ"] = DatePO.Date;
+                                                dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
+                                                dr["Nhu cầu VinCommerce"] =
+                                                    Convert.ToDouble(dr["Nhu cầu VinCommerce"]) + _CustomerOrder.QuantityOrder;
+                                                dr["Nhu cầu Đáp ứng"] =
+                                                    Convert.ToDouble(dr["Nhu cầu Đáp ứng"]) +
+                                                    _SupplierForecast.QuantityForecast;
+                                                ;
+                                                dr["Nguồn"] = _Supplier.SupplierType;
+                                                dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                                dr["Tên NCC"] = _Supplier.SupplierType == "ThuMua"
+                                                    ? "ThuMua"
+                                                    : _Supplier.SupplierName;
+                                                //dr["Ngày sơ chế"] = (int)(coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][_SupplierForecast].Date - _dateBase).TotalDays + 2;
+                                                dr["Ngày sơ chế"] =
+                                                    coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][_SupplierForecast]
+                                                        .Date;
+                                            }
                                         }
                                         else
                                         {
-                                            dr = dtMastah.Rows[_rowIndex];
+                                            DataRow dr = null;
+                                            var _rowIndex = 0;
+                                            if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                            {
+                                                dr = dtMastah.NewRow();
+                                                dicRow.Add(sKey, dtMastah.Rows.Count);
+                                                dtMastah.Rows.Add(dr);
+                                                dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
+                                            }
+                                            else
+                                            {
+                                                dr = dtMastah.Rows[_rowIndex];
+                                            }
+
+                                            dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                            dr["Tên sản phẩm"] = _Product.ProductName;
+                                            dr["Loại cửa hàng"] = _Customer.CustomerType;
+                                            //dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
+                                            dr["Ngày tiêu thụ"] = DatePO.Date;
+                                            dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
+                                            dr["Nhu cầu VinCommerce"] =
+                                                Convert.ToDouble(dr["Nhu cầu VinCommerce"]) + _CustomerOrder.QuantityOrder;
                                         }
-
-                                        var _Region = string.Join(string.Empty,
-                                            _Supplier.SupplierRegion.Where((ch, index) =>
-                                                ch != ' ' &&
-                                                (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
-                                        var _colName = string.Format("{0} {1}", _Supplier.SupplierType, _Region);
-
-                                        dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                        dr["Tên sản phẩm"] = _Product.ProductName;
-                                        dr["Loại cửa hàng"] = _Customer.CustomerType;
-                                        //dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
-                                        dr["Ngày tiêu thụ"] = DatePO.Date;
-                                        dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
-                                        dr["Nhu cầu VinCommerce"] =
-                                            Convert.ToDouble(dr["Nhu cầu VinCommerce"]) + _CustomerOrder.QuantityOrder;
-                                        dr["Nhu cầu Đáp ứng"] =
-                                            Convert.ToDouble(dr["Nhu cầu Đáp ứng"]) +
-                                            _SupplierForecast.QuantityForecast;
-                                        ;
-                                        dr["Nguồn"] = _Supplier.SupplierType;
-                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                        dr["Tên NCC"] = _Supplier.SupplierType == "ThuMua"
-                                            ? "ThuMua"
-                                            : _Supplier.SupplierName;
-                                        //dr["Ngày sơ chế"] = (int)(coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][_SupplierForecast].Date - _dateBase).TotalDays + 2;
-                                        dr["Ngày sơ chế"] =
-                                            coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][_SupplierForecast]
-                                                .Date;
                                     }
-                                }
-                                else
-                                {
-                                    DataRow dr = null;
-                                    var _rowIndex = 0;
-                                    if (!dicRow.TryGetValue(sKey, out _rowIndex))
-                                    {
-                                        dr = dtMastah.NewRow();
-                                        dicRow.Add(sKey, dtMastah.Rows.Count);
-                                        dtMastah.Rows.Add(dr);
-                                        dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
-                                    }
-                                    else
-                                    {
-                                        dr = dtMastah.Rows[_rowIndex];
-                                    }
-
-                                    dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                    dr["Tên sản phẩm"] = _Product.ProductName;
-                                    dr["Loại cửa hàng"] = _Customer.CustomerType;
-                                    //dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
-                                    dr["Ngày tiêu thụ"] = DatePO.Date;
-                                    dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
-                                    dr["Nhu cầu VinCommerce"] =
-                                        Convert.ToDouble(dr["Nhu cầu VinCommerce"]) + _CustomerOrder.QuantityOrder;
-                                }
-                            }
 
                             #endregion
                         }
@@ -2933,129 +2933,129 @@ namespace ChiaHang
 
                             foreach (var DatePO in coreStructure.dicCoord.Keys.OrderBy(x => x.Date)
                                 .Where(x => x.Date >= DateFrom.AddDays(dayDistance).Date))
-                            foreach (var _Product in coreStructure.dicCoord[DatePO].Keys.OrderBy(x => x.ProductCode))
-                            foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys
-                                .Where(x => x.QuantityOrderKg > 0)
-                                .OrderBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerType)
-                                .ThenBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerCode))
-                            {
-                                var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
-                                var sKey = string.Format("{0}{1}{2}{3}{4}{5}", DatePO.Date.ToString("yyyyMMdd"),
-                                    _Customer.CustomerType, _Customer.Company, _Customer.CustomerBigRegion,
-                                    _Product.ProductCode, YesNoSubRegion ? _Customer.CustomerRegion : null);
-                                if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
-                                {
-                                    foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product]
-                                        [_CustomerOrder].Keys.OrderBy(x =>
-                                            coreStructure.dicSupplier[x.SupplierId].SupplierType))
+                                foreach (var _Product in coreStructure.dicCoord[DatePO].Keys.OrderBy(x => x.ProductCode))
+                                    foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys
+                                        .Where(x => x.QuantityOrderKg > 0)
+                                        .OrderBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerType)
+                                        .ThenBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerCode))
                                     {
-                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
-
-                                        sKey += _Supplier.SupplierCode;
-
-                                        DataRow dr = null;
-                                        var _rowIndex = 0;
-                                        if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                        var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
+                                        var sKey = string.Format("{0}{1}{2}{3}{4}{5}", DatePO.Date.ToString("yyyyMMdd"),
+                                            _Customer.CustomerType, _Customer.Company, _Customer.CustomerBigRegion,
+                                            _Product.ProductCode, YesNoSubRegion ? _Customer.CustomerRegion : null);
+                                        if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
                                         {
-                                            dr = dtMastah.NewRow();
-                                            dicRow.Add(sKey, dtMastah.Rows.Count);
-                                            dtMastah.Rows.Add(dr);
-                                            dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
+                                            foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product]
+                                                [_CustomerOrder].Keys.OrderBy(x =>
+                                                    coreStructure.dicSupplier[x.SupplierId].SupplierType))
+                                            {
+                                                var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+
+                                                sKey += _Supplier.SupplierCode;
+
+                                                DataRow dr = null;
+                                                var _rowIndex = 0;
+                                                if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                                {
+                                                    dr = dtMastah.NewRow();
+                                                    dicRow.Add(sKey, dtMastah.Rows.Count);
+                                                    dtMastah.Rows.Add(dr);
+                                                    dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
+                                                }
+                                                else
+                                                {
+                                                    dr = dtMastah.Rows[_rowIndex];
+                                                }
+
+                                                var _Region = string.Join(string.Empty,
+                                                    _Supplier.SupplierRegion.Split(' ').Select(x => x.First()));
+
+                                                //string _Region = string.Join(String.Empty, _Supplier.SupplierRegion.Where((ch, index) => ch != ' ' && (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
+                                                var _colName = string.Format("{0} {1}", _Supplier.SupplierType, _Region);
+
+                                                dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                                dr["Tên sản phẩm"] = _Product.ProductName;
+                                                dr["Nhóm sản phẩm"] = _Product.ProductClassification;
+                                                dr["ProductOrientation"] = _Product.ProductOrientation;
+                                                dr["ProductClimate"] = _Product.ProductClimate;
+                                                dr["ProductionGroup"] = _Product.ProductionGroup;
+                                                dr["Ghi chú"] =
+                                                    _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
+                                                        ? "South"
+                                                        : "North")
+                                                        ? "Ok"
+                                                        : "Out of List";
+                                                dr["Loại cửa hàng"] = _Customer.CustomerType;
+                                                dr["P&L"] = _Customer.Company;
+                                                //dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
+                                                dr["Ngày tiêu thụ"] = DatePO.Date;
+                                                dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
+                                                dr["Tỉnh tiêu thụ"] = YesNoSubRegion ? _Customer.CustomerRegion : null;
+                                                dr["Vùng SX yêu cầu"] = _CustomerOrder.DesiredRegion ?? "Any";
+                                                dr["Nguồn yêu cầu"] = _CustomerOrder.DesiredSource ?? "Any";
+                                                dr["Nhu cầu"] = (double)dr["Nhu cầu"] + _CustomerOrder.QuantityOrderKg;
+                                                dr["Đáp ứng"] = (double)dr["Đáp ứng"] + _SupplierForecast.QuantityForecast;
+                                                ;
+                                                dr["Nguồn"] = _Supplier.SupplierType;
+                                                dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                                dr["Mã NCC"] = _Supplier.SupplierCode;
+                                                dr["Tên NCC"] = _Supplier.SupplierName;
+                                                //dr["Ngày sơ chế"] = (int)(coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][_SupplierForecast].Date - _dateBase).TotalDays + 2;
+                                                dr["Ngày sơ chế"] =
+                                                    coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][_SupplierForecast]
+                                                        .Date;
+                                                dr["Label"] = _SupplierForecast.LabelVinEco ? "Yes" : "No";
+                                                dr["CodeSFG"] = string.Format("{0}{1}{2}", _Product.ProductCode, 1,
+                                                    (_Supplier.SupplierRegion == "Lâm Đồng" ? 0 : 2) +
+                                                    (_SupplierForecast.LabelVinEco ? 1 : 0));
+                                            }
                                         }
                                         else
                                         {
-                                            dr = dtMastah.Rows[_rowIndex];
+                                            DataRow dr = null;
+                                            var _rowIndex = 0;
+                                            if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                            {
+                                                dr = dtMastah.NewRow();
+                                                dicRow.Add(sKey, dtMastah.Rows.Count);
+                                                dtMastah.Rows.Add(dr);
+                                                dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
+                                            }
+                                            else
+                                            {
+                                                dr = dtMastah.Rows[_rowIndex];
+                                            }
+
+                                            dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                            dr["Tên sản phẩm"] = _Product.ProductName;
+                                            dr["Nhóm sản phẩm"] = _Product.ProductClassification;
+                                            dr["ProductOrientation"] = _Product.ProductOrientation;
+                                            dr["ProductClimate"] = _Product.ProductClimate;
+                                            dr["ProductionGroup"] = _Product.ProductionGroup;
+                                            dr["Ghi chú"] =
+                                                _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
+                                                    ? "South"
+                                                    : "North")
+                                                    ? "Ok"
+                                                    : "Out of List";
+                                            dr["Loại cửa hàng"] = _Customer.CustomerType;
+                                            dr["P&L"] = _Customer.Company;
+                                            //dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
+                                            dr["Ngày tiêu thụ"] = DatePO.Date;
+                                            dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
+                                            dr["Tỉnh tiêu thụ"] = YesNoSubRegion ? _Customer.CustomerRegion : null;
+                                            dr["Vùng SX yêu cầu"] = _CustomerOrder.DesiredRegion ?? "Any";
+                                            dr["Nguồn yêu cầu"] = _CustomerOrder.DesiredSource ?? "Any";
+                                            dr["Nhu cầu"] = Convert.ToDouble(dr["Nhu cầu"] ?? 0) +
+                                                            _CustomerOrder.QuantityOrderKg;
+                                            dr["Nguồn"] = "Không đáp ứng";
                                         }
-
-                                        var _Region = string.Join(string.Empty,
-                                            _Supplier.SupplierRegion.Split(' ').Select(x => x.First()));
-
-                                        //string _Region = string.Join(String.Empty, _Supplier.SupplierRegion.Where((ch, index) => ch != ' ' && (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
-                                        var _colName = string.Format("{0} {1}", _Supplier.SupplierType, _Region);
-
-                                        dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                        dr["Tên sản phẩm"] = _Product.ProductName;
-                                        dr["Nhóm sản phẩm"] = _Product.ProductClassification;
-                                        dr["ProductOrientation"] = _Product.ProductOrientation;
-                                        dr["ProductClimate"] = _Product.ProductClimate;
-                                        dr["ProductionGroup"] = _Product.ProductionGroup;
-                                        dr["Ghi chú"] =
-                                            _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
-                                                ? "South"
-                                                : "North")
-                                                ? "Ok"
-                                                : "Out of List";
-                                        dr["Loại cửa hàng"] = _Customer.CustomerType;
-                                        dr["P&L"] = _Customer.Company;
-                                        //dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
-                                        dr["Ngày tiêu thụ"] = DatePO.Date;
-                                        dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
-                                        dr["Tỉnh tiêu thụ"] = YesNoSubRegion ? _Customer.CustomerRegion : null;
-                                        dr["Vùng SX yêu cầu"] = _CustomerOrder.DesiredRegion ?? "Any";
-                                        dr["Nguồn yêu cầu"] = _CustomerOrder.DesiredSource ?? "Any";
-                                        dr["Nhu cầu"] = (double) dr["Nhu cầu"] + _CustomerOrder.QuantityOrderKg;
-                                        dr["Đáp ứng"] = (double) dr["Đáp ứng"] + _SupplierForecast.QuantityForecast;
-                                        ;
-                                        dr["Nguồn"] = _Supplier.SupplierType;
-                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                        dr["Mã NCC"] = _Supplier.SupplierCode;
-                                        dr["Tên NCC"] = _Supplier.SupplierName;
-                                        //dr["Ngày sơ chế"] = (int)(coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][_SupplierForecast].Date - _dateBase).TotalDays + 2;
-                                        dr["Ngày sơ chế"] =
-                                            coreStructure.dicCoord[DatePO][_Product][_CustomerOrder][_SupplierForecast]
-                                                .Date;
-                                        dr["Label"] = _SupplierForecast.LabelVinEco ? "Yes" : "No";
-                                        dr["CodeSFG"] = string.Format("{0}{1}{2}", _Product.ProductCode, 1,
-                                            (_Supplier.SupplierRegion == "Lâm Đồng" ? 0 : 2) +
-                                            (_SupplierForecast.LabelVinEco ? 1 : 0));
                                     }
-                                }
-                                else
-                                {
-                                    DataRow dr = null;
-                                    var _rowIndex = 0;
-                                    if (!dicRow.TryGetValue(sKey, out _rowIndex))
-                                    {
-                                        dr = dtMastah.NewRow();
-                                        dicRow.Add(sKey, dtMastah.Rows.Count);
-                                        dtMastah.Rows.Add(dr);
-                                        dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
-                                    }
-                                    else
-                                    {
-                                        dr = dtMastah.Rows[_rowIndex];
-                                    }
-
-                                    dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                    dr["Tên sản phẩm"] = _Product.ProductName;
-                                    dr["Nhóm sản phẩm"] = _Product.ProductClassification;
-                                    dr["ProductOrientation"] = _Product.ProductOrientation;
-                                    dr["ProductClimate"] = _Product.ProductClimate;
-                                    dr["ProductionGroup"] = _Product.ProductionGroup;
-                                    dr["Ghi chú"] =
-                                        _Product.ProductNote.Contains(_Customer.CustomerBigRegion == "Miền Nam"
-                                            ? "South"
-                                            : "North")
-                                            ? "Ok"
-                                            : "Out of List";
-                                    dr["Loại cửa hàng"] = _Customer.CustomerType;
-                                    dr["P&L"] = _Customer.Company;
-                                    //dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
-                                    dr["Ngày tiêu thụ"] = DatePO.Date;
-                                    dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
-                                    dr["Tỉnh tiêu thụ"] = YesNoSubRegion ? _Customer.CustomerRegion : null;
-                                    dr["Vùng SX yêu cầu"] = _CustomerOrder.DesiredRegion ?? "Any";
-                                    dr["Nguồn yêu cầu"] = _CustomerOrder.DesiredSource ?? "Any";
-                                    dr["Nhu cầu"] = Convert.ToDouble(dr["Nhu cầu"] ?? 0) +
-                                                    _CustomerOrder.QuantityOrderKg;
-                                    dr["Nguồn"] = "Không đáp ứng";
-                                }
-                            }
 
                             foreach (DataRow dr in dtMastah.Rows)
                             {
-                                dr["NoSup"] = Math.Max((double) dr["Nhu cầu"] - (double) dr["Đáp ứng"], 0);
-                                if ((double) dr["NoSup"] > 1) dr["IsNoSup"] = true;
+                                dr["NoSup"] = Math.Max((double)dr["Nhu cầu"] - (double)dr["Đáp ứng"], 0);
+                                if ((double)dr["NoSup"] > 1) dr["IsNoSup"] = true;
                             }
 
                             var _FC = db.GetCollection<ForecastDate>("Forecast").Find(x =>
@@ -3065,38 +3065,38 @@ namespace ChiaHang
                                 .OrderByDescending(x => x.DateForecast);
 
                             foreach (var _ForecastDate in _FC)
-                            foreach (var _ProductForecast in _ForecastDate.ListProductForecast)
-                            foreach (var _SupplierForecast in _ProductForecast.ListSupplierForecast.Where(x =>
-                                x.QualityControlPass && x.QuantityForecastPlanned > 0))
-                            {
-                                var dr = dtMastah.NewRow();
+                                foreach (var _ProductForecast in _ForecastDate.ListProductForecast)
+                                    foreach (var _SupplierForecast in _ProductForecast.ListSupplierForecast.Where(x =>
+                                        x.QualityControlPass && x.QuantityForecastPlanned > 0))
+                                    {
+                                        var dr = dtMastah.NewRow();
 
-                                var _Product = coreStructure.dicProduct[_ProductForecast.ProductId];
-                                var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                        var _Product = coreStructure.dicProduct[_ProductForecast.ProductId];
+                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                if (FruitOnly)
-                                    if (_Product.ProductCode != "K" && _Product.ProductCode != "D01401")
-                                        continue;
+                                        if (FruitOnly)
+                                            if (_Product.ProductCode != "K" && _Product.ProductCode != "D01401")
+                                                continue;
 
-                                dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                dr["Tên sản phẩm"] = _Product.ProductName;
-                                dr["Nhóm sản phẩm"] = _Product.ProductClassification;
-                                dr["ProductOrientation"] = _Product.ProductOrientation;
-                                dr["ProductClimate"] = _Product.ProductClimate;
-                                dr["ProductionGroup"] = _Product.ProductionGroup;
-                                dr["Ghi chú"] = _Product.ProductNote.Count != 0 ? "Ok" : "Out of List";
+                                        dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                        dr["Tên sản phẩm"] = _Product.ProductName;
+                                        dr["Nhóm sản phẩm"] = _Product.ProductClassification;
+                                        dr["ProductOrientation"] = _Product.ProductOrientation;
+                                        dr["ProductClimate"] = _Product.ProductClimate;
+                                        dr["ProductionGroup"] = _Product.ProductionGroup;
+                                        dr["Ghi chú"] = _Product.ProductNote.Count != 0 ? "Ok" : "Out of List";
 
-                                dr["Nguồn"] = _Supplier.SupplierType;
-                                dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                dr["Mã NCC"] = _Supplier.SupplierCode;
-                                dr["Tên NCC"] = _Supplier.SupplierName;
+                                        dr["Nguồn"] = _Supplier.SupplierType;
+                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                        dr["Mã NCC"] = _Supplier.SupplierCode;
+                                        dr["Tên NCC"] = _Supplier.SupplierName;
 
-                                //dr["Ngày sơ chế"] = (int)(_ForecastDate.DateForecast.Date - _dateBase).TotalDays + 2;
-                                dr["Ngày sơ chế"] = _ForecastDate.DateForecast.Date;
-                                dr["KPI"] = _SupplierForecast.QuantityForecastPlanned;
+                                        //dr["Ngày sơ chế"] = (int)(_ForecastDate.DateForecast.Date - _dateBase).TotalDays + 2;
+                                        dr["Ngày sơ chế"] = _ForecastDate.DateForecast.Date;
+                                        dr["KPI"] = _SupplierForecast.QuantityForecastPlanned;
 
-                                dtMastah.Rows.Add(dr);
-                            }
+                                        dtMastah.Rows.Add(dr);
+                                    }
 
                             #endregion
                         }
@@ -3117,33 +3117,33 @@ namespace ChiaHang
                         dtLeftoverVe.Columns.Add("Sản lượng", typeof(double)).DefaultValue = 0;
 
                         foreach (var DateFC in coreStructure.dicFC.Keys)
-                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                        {
-                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                                coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
-                            if (_ListSupplier != null)
-                                foreach (var _SupplierForecast in _ListSupplier.Where(x => x.QuantityForecast > 3)
-                                    .OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                    if (_SupplierForecast.QuantityForecast > 0)
-                                    {
-                                        var dr = dtLeftoverVe.NewRow();
+                            foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                            {
+                                var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                    coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
+                                if (_ListSupplier != null)
+                                    foreach (var _SupplierForecast in _ListSupplier.Where(x => x.QuantityForecast > 3)
+                                        .OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierName))
+                                        if (_SupplierForecast.QuantityForecast > 0)
+                                        {
+                                            var dr = dtLeftoverVe.NewRow();
 
-                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                            //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                            var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                        dr["Mã VinEco"] = _Product.ProductCode;
-                                        dr["Tên VinEco"] = _Product.ProductName;
-                                        dr["Nhóm sản phẩm"] = _Product.ProductClassification;
-                                        dr["Mã Farm"] = _Supplier.SupplierCode;
-                                        dr["Tên Farm"] = _Supplier.SupplierName;
-                                        //dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
-                                        dr["Ngày thu hoạch"] = DateFC.Date;
-                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                        dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
+                                            dr["Mã VinEco"] = _Product.ProductCode;
+                                            dr["Tên VinEco"] = _Product.ProductName;
+                                            dr["Nhóm sản phẩm"] = _Product.ProductClassification;
+                                            dr["Mã Farm"] = _Supplier.SupplierCode;
+                                            dr["Tên Farm"] = _Supplier.SupplierName;
+                                            //dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
+                                            dr["Ngày thu hoạch"] = DateFC.Date;
+                                            dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                            dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
 
-                                        dtLeftoverVe.Rows.Add(dr);
-                                    }
-                        }
+                                            dtLeftoverVe.Rows.Add(dr);
+                                        }
+                            }
 
                         #endregion
 
@@ -3164,34 +3164,34 @@ namespace ChiaHang
                         dtLeftoverTmKPI.Columns.Add("Sản lượng", typeof(double)).DefaultValue = 0;
 
                         foreach (var DateFC in coreStructure.dicFC.Keys)
-                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                        {
-                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                                coreStructure.dicSupplier[x.SupplierId].SupplierType != "VinEco");
-                            if (_ListSupplier != null)
-                                foreach (var _SupplierForecast in _ListSupplier.Where(x => x.QuantityForecast >= 3)
-                                    .OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                    if (_SupplierForecast.QuantityForecast > 0)
-                                    {
-                                        var dr = dtLeftoverTmKPI.NewRow();
+                            foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                            {
+                                var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                    coreStructure.dicSupplier[x.SupplierId].SupplierType != "VinEco");
+                                if (_ListSupplier != null)
+                                    foreach (var _SupplierForecast in _ListSupplier.Where(x => x.QuantityForecast >= 3)
+                                        .OrderBy(x => coreStructure.dicSupplier[x.SupplierId].SupplierName))
+                                        if (_SupplierForecast.QuantityForecast > 0)
+                                        {
+                                            var dr = dtLeftoverTmKPI.NewRow();
 
-                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                            //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                            var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                        dr["Mã VinEco"] = _Product.ProductCode;
-                                        dr["Tên VinEco"] = _Product.ProductName;
-                                        dr["Nhóm sản phẩm"] = _Product.ProductClassification;
-                                        dr["Ghi chú"] = _Product.ProductNote.Count != 0 ? "Ok" : "Out of List";
-                                        dr["Mã NCC"] = _Supplier.SupplierCode;
-                                        dr["Tên NCC"] = _Supplier.SupplierName;
-                                        //dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
-                                        dr["Ngày thu hoạch"] = DateFC.Date;
-                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                        dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
+                                            dr["Mã VinEco"] = _Product.ProductCode;
+                                            dr["Tên VinEco"] = _Product.ProductName;
+                                            dr["Nhóm sản phẩm"] = _Product.ProductClassification;
+                                            dr["Ghi chú"] = _Product.ProductNote.Count != 0 ? "Ok" : "Out of List";
+                                            dr["Mã NCC"] = _Supplier.SupplierCode;
+                                            dr["Tên NCC"] = _Supplier.SupplierName;
+                                            //dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
+                                            dr["Ngày thu hoạch"] = DateFC.Date;
+                                            dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                            dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
 
-                                        dtLeftoverTmKPI.Rows.Add(dr);
-                                    }
-                        }
+                                            dtLeftoverTmKPI.Rows.Add(dr);
+                                        }
+                            }
 
                         #endregion
 
@@ -3212,35 +3212,35 @@ namespace ChiaHang
                         dtLeftoverTm.Columns.Add("Sản lượng", typeof(double)).DefaultValue = 0;
 
                         foreach (var DateFC in coreStructure.dicFC.Keys)
-                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                        {
-                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                                coreStructure.dicSupplier[x.SupplierId].SupplierType != "VinEco");
-                            if (_ListSupplier != null)
-                                foreach (var _SupplierForecast in _ListSupplier
-                                    .Where(x => x.QuantityForecastOriginal >= 3).OrderBy(x =>
-                                        coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                    if (_SupplierForecast.QuantityForecast > 0)
-                                    {
-                                        var dr = dtLeftoverTm.NewRow();
+                            foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                            {
+                                var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                    coreStructure.dicSupplier[x.SupplierId].SupplierType != "VinEco");
+                                if (_ListSupplier != null)
+                                    foreach (var _SupplierForecast in _ListSupplier
+                                        .Where(x => x.QuantityForecastOriginal >= 3).OrderBy(x =>
+                                            coreStructure.dicSupplier[x.SupplierId].SupplierName))
+                                        if (_SupplierForecast.QuantityForecast > 0)
+                                        {
+                                            var dr = dtLeftoverTm.NewRow();
 
-                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                            //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                            var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                        dr["Mã VinEco"] = _Product.ProductCode;
-                                        dr["Tên VinEco"] = _Product.ProductName;
-                                        dr["Nhóm sản phẩm"] = _Product.ProductClassification;
-                                        dr["Ghi chú"] = _Product.ProductNote.Count != 0 ? "Ok" : "Out of List";
-                                        dr["Mã NCC"] = _Supplier.SupplierCode;
-                                        dr["Tên NCC"] = _Supplier.SupplierName;
-                                        //dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
-                                        dr["Ngày thu hoạch"] = DateFC.Date;
-                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                        dr["Sản lượng"] = _SupplierForecast.QuantityForecastOriginal;
+                                            dr["Mã VinEco"] = _Product.ProductCode;
+                                            dr["Tên VinEco"] = _Product.ProductName;
+                                            dr["Nhóm sản phẩm"] = _Product.ProductClassification;
+                                            dr["Ghi chú"] = _Product.ProductNote.Count != 0 ? "Ok" : "Out of List";
+                                            dr["Mã NCC"] = _Supplier.SupplierCode;
+                                            dr["Tên NCC"] = _Supplier.SupplierName;
+                                            //dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
+                                            dr["Ngày thu hoạch"] = DateFC.Date;
+                                            dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                            dr["Sản lượng"] = _SupplierForecast.QuantityForecastOriginal;
 
-                                        dtLeftoverTm.Rows.Add(dr);
-                                    }
-                        }
+                                            dtLeftoverTm.Rows.Add(dr);
+                                        }
+                            }
 
                         #endregion
 
@@ -3345,83 +3345,83 @@ namespace ChiaHang
 
                         dicRow = new Dictionary<string, int>();
                         foreach (var DatePO in coreStructure.dicCoord.Keys)
-                        foreach (var _Product in coreStructure.dicCoord[DatePO].Keys.OrderBy(x => x.ProductCode))
-                        foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys
-                            .OrderBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerType))
-                        {
-                            var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
-                            var sKey = string.Format("{0}{1}{2}{3}", DatePO.Date, _Customer.CustomerType,
-                                _Customer.CustomerBigRegion, _Product.ProductCode);
-                            if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
-                            {
-                                foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product]
-                                    [_CustomerOrder].Keys.OrderBy(x =>
-                                        coreStructure.dicSupplier[x.SupplierId].SupplierType))
+                            foreach (var _Product in coreStructure.dicCoord[DatePO].Keys.OrderBy(x => x.ProductCode))
+                                foreach (var _CustomerOrder in coreStructure.dicCoord[DatePO][_Product].Keys
+                                    .OrderBy(x => coreStructure.dicCustomer[x.CustomerId].CustomerType))
                                 {
-                                    var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
-
-                                    DataRow dr = null;
-                                    var _rowIndex = 0;
-                                    if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                    var _Customer = coreStructure.dicCustomer[_CustomerOrder.CustomerId];
+                                    var sKey = string.Format("{0}{1}{2}{3}", DatePO.Date, _Customer.CustomerType,
+                                        _Customer.CustomerBigRegion, _Product.ProductCode);
+                                    if (coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] != null)
                                     {
-                                        dr = dtMastah.NewRow();
-                                        dicRow.Add(sKey, dtMastah.Rows.Count);
-                                        dtMastah.Rows.Add(dr);
-                                        dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
+                                        foreach (var _SupplierForecast in coreStructure.dicCoord[DatePO][_Product]
+                                            [_CustomerOrder].Keys.OrderBy(x =>
+                                                coreStructure.dicSupplier[x.SupplierId].SupplierType))
+                                        {
+                                            var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+
+                                            DataRow dr = null;
+                                            var _rowIndex = 0;
+                                            if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                            {
+                                                dr = dtMastah.NewRow();
+                                                dicRow.Add(sKey, dtMastah.Rows.Count);
+                                                dtMastah.Rows.Add(dr);
+                                                dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
+                                            }
+                                            else
+                                            {
+                                                dr = dtMastah.Rows[_rowIndex];
+                                            }
+
+                                            var _Region = string.Join(string.Empty,
+                                                _Supplier.SupplierRegion.Where((ch, index) =>
+                                                    ch != ' ' && (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
+                                            var _colName = string.Format("{0} {1}", _Supplier.SupplierType, _Region);
+
+                                            dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                            dr["Tên sản phẩm"] = _Product.ProductName;
+                                            dr["Loại cửa hàng"] = _Customer.CustomerType;
+                                            dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
+                                            dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
+                                            dr["Nhu cầu VinCommerce"] =
+                                                Convert.ToDouble(dr["Nhu cầu VinCommerce"]) + _CustomerOrder.QuantityOrder;
+
+                                            dr[_colName] = Convert.ToDouble(dr[_colName]) + _SupplierForecast.QuantityForecast;
+
+                                            dr["Tổng " + _Supplier.SupplierType] =
+                                                Convert.ToDouble(dr["Tổng " + _Supplier.SupplierType]) +
+                                                _SupplierForecast.QuantityForecast;
+                                            dr["Nhu cầu Đáp ứng"] =
+                                                Convert.ToDouble(dr["Nhu cầu Đáp ứng"]) + _SupplierForecast.QuantityForecast;
+                                            ;
+                                        }
                                     }
                                     else
                                     {
-                                        dr = dtMastah.Rows[_rowIndex];
+                                        DataRow dr = null;
+                                        var _rowIndex = 0;
+                                        if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                        {
+                                            dr = dtMastah.NewRow();
+                                            dicRow.Add(sKey, dtMastah.Rows.Count);
+                                            dtMastah.Rows.Add(dr);
+                                            dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
+                                        }
+                                        else
+                                        {
+                                            dr = dtMastah.Rows[_rowIndex];
+                                        }
+
+                                        dr["Mã 6 ký tự"] = _Product.ProductCode;
+                                        dr["Tên sản phẩm"] = _Product.ProductName;
+                                        dr["Loại cửa hàng"] = _Customer.CustomerType;
+                                        dr["Ngày tiêu thụ"] = (int)(DatePO.Date - _dateBase).TotalDays + 2;
+                                        dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
+                                        dr["Nhu cầu VinCommerce"] =
+                                            Convert.ToDouble(dr["Nhu cầu VinCommerce"]) + _CustomerOrder.QuantityOrder;
                                     }
-
-                                    var _Region = string.Join(string.Empty,
-                                        _Supplier.SupplierRegion.Where((ch, index) =>
-                                            ch != ' ' && (index == 0 || _Supplier.SupplierRegion[index - 1] == ' ')));
-                                    var _colName = string.Format("{0} {1}", _Supplier.SupplierType, _Region);
-
-                                    dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                    dr["Tên sản phẩm"] = _Product.ProductName;
-                                    dr["Loại cửa hàng"] = _Customer.CustomerType;
-                                    dr["Ngày tiêu thụ"] = (int) (DatePO.Date - _dateBase).TotalDays + 2;
-                                    dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
-                                    dr["Nhu cầu VinCommerce"] =
-                                        Convert.ToDouble(dr["Nhu cầu VinCommerce"]) + _CustomerOrder.QuantityOrder;
-
-                                    dr[_colName] = Convert.ToDouble(dr[_colName]) + _SupplierForecast.QuantityForecast;
-
-                                    dr["Tổng " + _Supplier.SupplierType] =
-                                        Convert.ToDouble(dr["Tổng " + _Supplier.SupplierType]) +
-                                        _SupplierForecast.QuantityForecast;
-                                    dr["Nhu cầu Đáp ứng"] =
-                                        Convert.ToDouble(dr["Nhu cầu Đáp ứng"]) + _SupplierForecast.QuantityForecast;
-                                    ;
                                 }
-                            }
-                            else
-                            {
-                                DataRow dr = null;
-                                var _rowIndex = 0;
-                                if (!dicRow.TryGetValue(sKey, out _rowIndex))
-                                {
-                                    dr = dtMastah.NewRow();
-                                    dicRow.Add(sKey, dtMastah.Rows.Count);
-                                    dtMastah.Rows.Add(dr);
-                                    dr = dtMastah.Rows[dtMastah.Rows.Count - 1];
-                                }
-                                else
-                                {
-                                    dr = dtMastah.Rows[_rowIndex];
-                                }
-
-                                dr["Mã 6 ký tự"] = _Product.ProductCode;
-                                dr["Tên sản phẩm"] = _Product.ProductName;
-                                dr["Loại cửa hàng"] = _Customer.CustomerType;
-                                dr["Ngày tiêu thụ"] = (int) (DatePO.Date - _dateBase).TotalDays + 2;
-                                dr["Vùng tiêu thụ"] = _Customer.CustomerBigRegion;
-                                dr["Nhu cầu VinCommerce"] =
-                                    Convert.ToDouble(dr["Nhu cầu VinCommerce"]) + _CustomerOrder.QuantityOrder;
-                            }
-                        }
 
                         #endregion
 
@@ -3440,31 +3440,31 @@ namespace ChiaHang
                         dtLeftoverVe.Columns.Add("Sản lượng", typeof(double)).DefaultValue = 0;
 
                         foreach (var DateFC in coreStructure.dicFC.Keys)
-                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                        {
-                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                                coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
-                            if (_ListSupplier != null)
-                                foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
-                                    coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                    if (_SupplierForecast.QuantityForecast > 0)
-                                    {
-                                        var dr = dtLeftoverVe.NewRow();
+                            foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                            {
+                                var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                    coreStructure.dicSupplier[x.SupplierId].SupplierType == "VinEco");
+                                if (_ListSupplier != null)
+                                    foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
+                                        coreStructure.dicSupplier[x.SupplierId].SupplierName))
+                                        if (_SupplierForecast.QuantityForecast > 0)
+                                        {
+                                            var dr = dtLeftoverVe.NewRow();
 
-                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                            //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                            var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                        dr["Mã VinEco"] = _Product.ProductCode;
-                                        dr["Tên VinEco"] = _Product.ProductName;
-                                        dr["Mã Farm"] = _Supplier.SupplierCode;
-                                        dr["Tên Farm"] = _Supplier.SupplierName;
-                                        dr["Ngày thu hoạch"] = (int) (DateFC.Date - _dateBase).TotalDays + 2;
-                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                        dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
+                                            dr["Mã VinEco"] = _Product.ProductCode;
+                                            dr["Tên VinEco"] = _Product.ProductName;
+                                            dr["Mã Farm"] = _Supplier.SupplierCode;
+                                            dr["Tên Farm"] = _Supplier.SupplierName;
+                                            dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
+                                            dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                            dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
 
-                                        dtLeftoverVe.Rows.Add(dr);
-                                    }
-                        }
+                                            dtLeftoverVe.Rows.Add(dr);
+                                        }
+                            }
 
                         #endregion
 
@@ -3483,31 +3483,31 @@ namespace ChiaHang
                         dtLeftoverTm.Columns.Add("Sản lượng", typeof(double)).DefaultValue = 0;
 
                         foreach (var DateFC in coreStructure.dicFC.Keys)
-                        foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
-                        {
-                            var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
-                                coreStructure.dicSupplier[x.SupplierId].SupplierType == "ThuMua");
-                            if (_ListSupplier != null)
-                                foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
-                                    coreStructure.dicSupplier[x.SupplierId].SupplierName))
-                                    if (_SupplierForecast.QuantityForecast > 0)
-                                    {
-                                        var dr = dtLeftoverTm.NewRow();
+                            foreach (var _Product in coreStructure.dicFC[DateFC].Keys.OrderBy(x => x.ProductCode))
+                            {
+                                var _ListSupplier = coreStructure.dicFC[DateFC][_Product].Keys.Where(x =>
+                                    coreStructure.dicSupplier[x.SupplierId].SupplierType == "ThuMua");
+                                if (_ListSupplier != null)
+                                    foreach (var _SupplierForecast in _ListSupplier.OrderBy(x =>
+                                        coreStructure.dicSupplier[x.SupplierId].SupplierName))
+                                        if (_SupplierForecast.QuantityForecast > 0)
+                                        {
+                                            var dr = dtLeftoverTm.NewRow();
 
-                                        //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
-                                        var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
+                                            //Customer _Customer =coreStructure. dicCustomer[_CustomerOrder.CustomerId];
+                                            var _Supplier = coreStructure.dicSupplier[_SupplierForecast.SupplierId];
 
-                                        dr["Mã VinEco"] = _Product.ProductCode;
-                                        dr["Tên VinEco"] = _Product.ProductName;
-                                        dr["Mã Farm"] = _Supplier.SupplierCode;
-                                        dr["Tên Farm"] = _Supplier.SupplierName;
-                                        dr["Ngày thu hoạch"] = (int) (DateFC.Date - _dateBase).TotalDays + 2;
-                                        dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
-                                        dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
+                                            dr["Mã VinEco"] = _Product.ProductCode;
+                                            dr["Tên VinEco"] = _Product.ProductName;
+                                            dr["Mã Farm"] = _Supplier.SupplierCode;
+                                            dr["Tên Farm"] = _Supplier.SupplierName;
+                                            dr["Ngày thu hoạch"] = (int)(DateFC.Date - _dateBase).TotalDays + 2;
+                                            dr["Vùng sản xuất"] = _Supplier.SupplierRegion;
+                                            dr["Sản lượng"] = _SupplierForecast.QuantityForecast;
 
-                                        dtLeftoverTm.Rows.Add(dr);
-                                    }
-                        }
+                                            dtLeftoverTm.Rows.Add(dr);
+                                        }
+                            }
 
                         #endregion
 
@@ -3594,148 +3594,148 @@ namespace ChiaHang
             // Highest layer. Date of Demand.
             foreach (var DemandDate in coreStructure.dicPO.Keys.OrderByDescending(x => x.Date).Reverse())
                 // Second layer - Priority Target.
-            foreach (var PriorityTarget in ListPriorityTarget)
-            {
-                var TemporaryProductDictionary = new Dictionary<Product, bool>();
-
-                var PONorth = coreStructure.dicPO[DemandDate];
-                var POSouth = coreStructure.dicPO[DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"])];
-
-                foreach (var CurrentProduct in PONorth.Keys)
-                    if (!TemporaryProductDictionary.ContainsKey(CurrentProduct))
-                        TemporaryProductDictionary.Add(CurrentProduct, true);
-                foreach (var CurrentProduct in POSouth.Keys)
-                    if (!TemporaryProductDictionary.ContainsKey(CurrentProduct))
-                        TemporaryProductDictionary.Add(CurrentProduct, true);
-
-                foreach (var CurrentProduct in TemporaryProductDictionary.Keys)
+                foreach (var PriorityTarget in ListPriorityTarget)
                 {
-                    var _result = new Dictionary<SupplierForecast, bool>();
-                    var SupplyNorth = new Dictionary<Guid, SupplierForecast>();
-                    var SupplySouth = new Dictionary<Guid, SupplierForecast>();
-                    var SupplyHighland = new Dictionary<Guid, SupplierForecast>();
+                    var TemporaryProductDictionary = new Dictionary<Product, bool>();
 
-                    if (coreStructure.dicFC[DemandDate.AddDays(-coreStructure.dicTransferDays["North-North"])]
-                        .TryGetValue(CurrentProduct, out _result))
-                        SupplyNorth = _result.Keys.Where(x =>
-                            x.Availability.Contains(
-                                (DemandDate.AddDays(-coreStructure.dicTransferDays["North-North"]).DayOfWeek + 1)
-                                .ToString())).ToDictionary(x => x.SupplierForecastId);
+                    var PONorth = coreStructure.dicPO[DemandDate];
+                    var POSouth = coreStructure.dicPO[DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"])];
 
-                    if (coreStructure.dicFC[DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"])]
-                        .TryGetValue(CurrentProduct, out _result))
-                        SupplySouth = _result.Keys.Where(x =>
-                            x.Availability.Contains(
-                                (DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"]).DayOfWeek + 1)
-                                .ToString())).ToDictionary(x => x.SupplierForecastId);
-                    ;
+                    foreach (var CurrentProduct in PONorth.Keys)
+                        if (!TemporaryProductDictionary.ContainsKey(CurrentProduct))
+                            TemporaryProductDictionary.Add(CurrentProduct, true);
+                    foreach (var CurrentProduct in POSouth.Keys)
+                        if (!TemporaryProductDictionary.ContainsKey(CurrentProduct))
+                            TemporaryProductDictionary.Add(CurrentProduct, true);
 
-                    if (coreStructure.dicFC[DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"])]
-                        .TryGetValue(CurrentProduct, out _result))
-                        SupplyHighland = _result.Keys.Where(x =>
-                            x.Availability.Contains(
-                                (DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"]).DayOfWeek + 1)
-                                .ToString())).ToDictionary(x => x.SupplierForecastId);
-                    ;
+                    foreach (var CurrentProduct in TemporaryProductDictionary.Keys)
+                    {
+                        var _result = new Dictionary<SupplierForecast, bool>();
+                        var SupplyNorth = new Dictionary<Guid, SupplierForecast>();
+                        var SupplySouth = new Dictionary<Guid, SupplierForecast>();
+                        var SupplyHighland = new Dictionary<Guid, SupplierForecast>();
 
-                    var ListRate = new double[3];
+                        if (coreStructure.dicFC[DemandDate.AddDays(-coreStructure.dicTransferDays["North-North"])]
+                            .TryGetValue(CurrentProduct, out _result))
+                            SupplyNorth = _result.Keys.Where(x =>
+                                x.Availability.Contains(
+                                    (DemandDate.AddDays(-coreStructure.dicTransferDays["North-North"]).DayOfWeek + 1)
+                                    .ToString())).ToDictionary(x => x.SupplierForecastId);
 
-                    // Total Demand. Customers' Regions
-                    var DemandNorth = !PONorth.ContainsKey(CurrentProduct)
-                        ? 0
-                        : PONorth[CurrentProduct].Keys
-                            .Where(x =>
-                                coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == "Miền Bắc" &&
-                                PriorityTarget != ""
-                                    ? coreStructure.dicCustomer[x.CustomerId].CustomerType == PriorityTarget
-                                    : true)
-                            .Sum(x => x.QuantityOrderKg);
+                        if (coreStructure.dicFC[DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"])]
+                            .TryGetValue(CurrentProduct, out _result))
+                            SupplySouth = _result.Keys.Where(x =>
+                                x.Availability.Contains(
+                                    (DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"]).DayOfWeek + 1)
+                                    .ToString())).ToDictionary(x => x.SupplierForecastId);
+                        ;
 
-                    // In case VM+, have to calculate rate twice coz fuck the police. Really.
-                    var DemandNorthVM = !PriorityTarget.Contains("VM+")
-                        ? 0
-                        : PONorth[CurrentProduct].Keys
-                            .Where(x =>
-                                coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == "Miền Bắc" &&
-                                coreStructure.dicCustomer[x.CustomerId].CustomerType == "VM")
-                            .Sum(x => x.QuantityOrderKg);
+                        if (coreStructure.dicFC[DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"])]
+                            .TryGetValue(CurrentProduct, out _result))
+                            SupplyHighland = _result.Keys.Where(x =>
+                                x.Availability.Contains(
+                                    (DemandDate.AddDays(-coreStructure.dicTransferDays["Highland-North"]).DayOfWeek + 1)
+                                    .ToString())).ToDictionary(x => x.SupplierForecastId);
+                        ;
 
-                    var DemandSouth = !POSouth.ContainsKey(CurrentProduct)
-                        ? 0
-                        : POSouth[CurrentProduct].Keys
-                            .Where(x =>
-                                coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == "Miền Nam" &&
-                                PriorityTarget != ""
-                                    ? coreStructure.dicCustomer[x.CustomerId].CustomerType == PriorityTarget
-                                    : true)
-                            .Sum(x => x.QuantityOrderKg);
+                        var ListRate = new double[3];
 
-                    var DemandSouthVM = !PriorityTarget.Contains("VM+")
-                        ? 0
-                        : PONorth[CurrentProduct].Keys
-                            .Where(x =>
-                                coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == "Miền Nam" &&
-                                coreStructure.dicCustomer[x.CustomerId].CustomerType == "VM")
-                            .Sum(x => x.QuantityOrderKg);
+                        // Total Demand. Customers' Regions
+                        var DemandNorth = !PONorth.ContainsKey(CurrentProduct)
+                            ? 0
+                            : PONorth[CurrentProduct].Keys
+                                .Where(x =>
+                                    coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == "Miền Bắc" &&
+                                    PriorityTarget != ""
+                                        ? coreStructure.dicCustomer[x.CustomerId].CustomerType == PriorityTarget
+                                        : true)
+                                .Sum(x => x.QuantityOrderKg);
 
-                    // Total Missing. Customers' Regions
-                    var MissingNorth = DemandNorth - SupplyNorth.Values.Sum(x => x.QuantityForecast);
-                    var MissingSouth = DemandSouth - SupplySouth.Values.Sum(x => x.QuantityForecast);
+                        // In case VM+, have to calculate rate twice coz fuck the police. Really.
+                        var DemandNorthVM = !PriorityTarget.Contains("VM+")
+                            ? 0
+                            : PONorth[CurrentProduct].Keys
+                                .Where(x =>
+                                    coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == "Miền Bắc" &&
+                                    coreStructure.dicCustomer[x.CustomerId].CustomerType == "VM")
+                                .Sum(x => x.QuantityOrderKg);
 
-                    var QtyNorthNoXRegion = SupplyNorth.Values.Where(x => !x.CrossRegion).Sum(x => x.QuantityForecast);
-                    var QtyNorthXRegion = SupplyNorth.Values.Where(x => x.CrossRegion).Sum(x => x.QuantityForecast);
+                        var DemandSouth = !POSouth.ContainsKey(CurrentProduct)
+                            ? 0
+                            : POSouth[CurrentProduct].Keys
+                                .Where(x =>
+                                    coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == "Miền Nam" &&
+                                    PriorityTarget != ""
+                                        ? coreStructure.dicCustomer[x.CustomerId].CustomerType == PriorityTarget
+                                        : true)
+                                .Sum(x => x.QuantityOrderKg);
 
-                    var QtySouthNoXRegion = SupplySouth.Values.Where(x => !x.CrossRegion).Sum(x => x.QuantityForecast);
-                    var QtySouthXRegion = SupplySouth.Values.Where(x => x.CrossRegion).Sum(x => x.QuantityForecast);
+                        var DemandSouthVM = !PriorityTarget.Contains("VM+")
+                            ? 0
+                            : PONorth[CurrentProduct].Keys
+                                .Where(x =>
+                                    coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == "Miền Nam" &&
+                                    coreStructure.dicCustomer[x.CustomerId].CustomerType == "VM")
+                                .Sum(x => x.QuantityOrderKg);
 
-                    // Credit goes to someone very special, for figuring out the entire logic, the simplest way.
-                    // Made by her. Hah!
-                    var QtySouthCanSpare = Math.Min(Math.Max(QtySouthNoXRegion + QtySouthXRegion - DemandSouth, 0),
-                        QtySouthXRegion);
-                    var QtyNorthCanSpare = Math.Min(Math.Max(QtySouthNoXRegion + QtySouthXRegion - DemandSouth, 0),
-                        QtySouthXRegion);
+                        // Total Missing. Customers' Regions
+                        var MissingNorth = DemandNorth - SupplyNorth.Values.Sum(x => x.QuantityForecast);
+                        var MissingSouth = DemandSouth - SupplySouth.Values.Sum(x => x.QuantityForecast);
 
-                    var QtyHighland = SupplyHighland.Values.Sum(x => x.QuantityForecast);
+                        var QtyNorthNoXRegion = SupplyNorth.Values.Where(x => !x.CrossRegion).Sum(x => x.QuantityForecast);
+                        var QtyNorthXRegion = SupplyNorth.Values.Where(x => x.CrossRegion).Sum(x => x.QuantityForecast);
 
-                    var _ProductCrossRegion = new ProductCrossRegion();
-                    var flagNoHighlandToNorth = true;
-                    if (coreStructure.dicProductCrossRegion.TryGetValue(CurrentProduct.ProductId,
-                        out _ProductCrossRegion))
-                        if (!_ProductCrossRegion.ToNorth)
-                            flagNoHighlandToNorth = false;
-                    var QtyHighlandToNorth = flagNoHighlandToNorth ? QtyHighland : 0;
+                        var QtySouthNoXRegion = SupplySouth.Values.Where(x => !x.CrossRegion).Sum(x => x.QuantityForecast);
+                        var QtySouthXRegion = SupplySouth.Values.Where(x => x.CrossRegion).Sum(x => x.QuantityForecast);
 
-                    var RateNorth =
-                        (QtyNorthNoXRegion + QtyNorthXRegion +
-                         QtyHighlandToNorth * (MissingNorth / (MissingNorth + MissingSouth)) + QtySouthCanSpare)
-                        / DemandNorth;
+                        // Credit goes to someone very special, for figuring out the entire logic, the simplest way.
+                        // Made by her. Hah!
+                        var QtySouthCanSpare = Math.Min(Math.Max(QtySouthNoXRegion + QtySouthXRegion - DemandSouth, 0),
+                            QtySouthXRegion);
+                        var QtyNorthCanSpare = Math.Min(Math.Max(QtySouthNoXRegion + QtySouthXRegion - DemandSouth, 0),
+                            QtySouthXRegion);
 
-                    var RateNorthWithVM =
-                        (QtyNorthNoXRegion + QtyNorthXRegion +
-                         QtyHighlandToNorth * (MissingNorth / (MissingNorth + MissingSouth)) + QtySouthCanSpare)
-                        / (DemandNorth + DemandNorthVM);
+                        var QtyHighland = SupplyHighland.Values.Sum(x => x.QuantityForecast);
 
-                    if (RateNorthWithVM < 1)
-                        RateNorth = 1;
+                        var _ProductCrossRegion = new ProductCrossRegion();
+                        var flagNoHighlandToNorth = true;
+                        if (coreStructure.dicProductCrossRegion.TryGetValue(CurrentProduct.ProductId,
+                            out _ProductCrossRegion))
+                            if (!_ProductCrossRegion.ToNorth)
+                                flagNoHighlandToNorth = false;
+                        var QtyHighlandToNorth = flagNoHighlandToNorth ? QtyHighland : 0;
 
-                    RateNorth = Math.Min(RateNorth, UpperCap);
+                        var RateNorth =
+                            (QtyNorthNoXRegion + QtyNorthXRegion +
+                             QtyHighlandToNorth * (MissingNorth / (MissingNorth + MissingSouth)) + QtySouthCanSpare)
+                            / DemandNorth;
 
-                    var RateSouth =
-                        (QtySouthNoXRegion + QtySouthXRegion +
-                         QtyHighland * (MissingSouth / (MissingNorth + MissingSouth)) + QtyNorthCanSpare)
-                        / DemandSouth;
+                        var RateNorthWithVM =
+                            (QtyNorthNoXRegion + QtyNorthXRegion +
+                             QtyHighlandToNorth * (MissingNorth / (MissingNorth + MissingSouth)) + QtySouthCanSpare)
+                            / (DemandNorth + DemandNorthVM);
 
-                    var RateSouthWithVM =
-                        (QtySouthNoXRegion + QtySouthXRegion +
-                         QtyHighland * (MissingSouth / (MissingNorth + MissingSouth)) + QtyNorthCanSpare)
-                        / (DemandSouth + DemandSouthVM);
+                        if (RateNorthWithVM < 1)
+                            RateNorth = 1;
 
-                    if (RateSouthWithVM < 1)
-                        RateSouth = 1;
+                        RateNorth = Math.Min(RateNorth, UpperCap);
 
-                    RateSouth = Math.Min(RateSouth, UpperCap);
+                        var RateSouth =
+                            (QtySouthNoXRegion + QtySouthXRegion +
+                             QtyHighland * (MissingSouth / (MissingNorth + MissingSouth)) + QtyNorthCanSpare)
+                            / DemandSouth;
+
+                        var RateSouthWithVM =
+                            (QtySouthNoXRegion + QtySouthXRegion +
+                             QtyHighland * (MissingSouth / (MissingNorth + MissingSouth)) + QtyNorthCanSpare)
+                            / (DemandSouth + DemandSouthVM);
+
+                        if (RateSouthWithVM < 1)
+                            RateSouth = 1;
+
+                        RateSouth = Math.Min(RateSouth, UpperCap);
+                    }
                 }
-            }
         }
 
         // Todo - Thoroughly comment on every line.
@@ -3759,167 +3759,219 @@ namespace ChiaHang
                 //WriteToRichTextBoxOutput(String.Format("{0} => {1}, {2}{3}", String.Concat(SupplierRegion.Split(' ').Select(x => x.First())), String.Concat(CustomerRegion.Split(' ').Select(x => x.First().ToString().ToUpper())), SupplierType, (PriorityTarget != "" ? " " + PriorityTarget : "")), false);
                 foreach (var DatePO in coreStructure.dicPO.Keys.OrderByDescending(x => x.Date).Reverse())
                     // Product Layer.
-                foreach (var _Product in coreStructure.dicPO[DatePO].Keys.OrderByDescending(x => x.ProductCode)
-                    .Reverse())
-                {
-                    double _MOQ = 0;
-                    // In case they are ordering and checking performance through an unit that's NOT FUCKING KILOGRAM!
-                    //if (YesNoByUnit)
-                    //{
-                    //    // Cheapest way to calculate Kg per Unit.
-                    //    // Man I'm so smart.
-                    //    _MOQ = _CustomerOrder.QuantityOrderKg / _CustomerOrder.QuantityOrder;
-                    //}
-                    // ... Otherwise, we're cool boys.
-                    //else
-                    //{
+                    foreach (var _Product in coreStructure.dicPO[DatePO].Keys.OrderByDescending(x => x.ProductCode)
+                        .Reverse())
+                    {
+                        double _MOQ = 0;
+                        // In case they are ordering and checking performance through an unit that's NOT FUCKING KILOGRAM!
+                        //if (YesNoByUnit)
+                        //{
+                        //    // Cheapest way to calculate Kg per Unit.
+                        //    // Man I'm so smart.
+                        //    _MOQ = _CustomerOrder.QuantityOrderKg / _CustomerOrder.QuantityOrder;
+                        //}
+                        // ... Otherwise, we're cool boys.
+                        //else
+                        //{
 
-                    _MOQ = coreStructure.dicMinimum[_Product.ProductCode.Substring(0, 1)];
-                    // Special cases for Lemon. Apparently it's not Fruit but Spices :\
-                    if (_Product.ProductCode.Substring(0, 1) == "K" &&
-                        (_Product.ProductCode == "K01901" || _Product.ProductCode == "K02201"))
-                        _MOQ = 0.3;
+                        _MOQ = coreStructure.dicMinimum[_Product.ProductCode.Substring(0, 1)];
+                        // Special cases for Lemon. Apparently it's not Fruit but Spices :\
+                        if (_Product.ProductCode.Substring(0, 1) == "K" &&
+                            (_Product.ProductCode == "K01901" || _Product.ProductCode == "K02201"))
+                            _MOQ = 0.3;
 
-                    //}
+                        //}
 
-                    //restartThis:
+                        //restartThis:
 
-                    /// <! For Debuging Purposes Only !>
-                    // Only uncomment in very specific debugging situation.
-                    //if (_Product.ProductCode == "A04801" && DatePO.Day == 26 && CustomerRegion == "Miền Nam" && SupplierRegion == "Miền Nam" && SupplierType == "VCM")
-                    //{
-                    //    string WhatAmIEvenDoing = "I have no freaking idea.";
-                    //}
+                        /// <! For Debuging Purposes Only !>
+                        // Only uncomment in very specific debugging situation.
+                        //if (_Product.ProductCode == "A04801" && DatePO.Day == 26 && CustomerRegion == "Miền Nam" && SupplierRegion == "Miền Nam" && SupplierType == "VCM")
+                        //{
+                        //    string WhatAmIEvenDoing = "I have no freaking idea.";
+                        //}
 
-                    // Skip if product is not in the List VinEco supplies.
-                    if (SupplierType != "VinEco" && _Product.ProductCode.Substring(0, 1) != "K" &&
-                        (PriorityTarget == "VM" || PriorityTarget == "VM+"))
-                        if (!_Product.ProductNote.Contains(CustomerRegion == "Miền Bắc" ? "North" : "South"))
-                            continue;
+                        // Skip if product is not in the List VinEco supplies.
+                        if (SupplierType != "VinEco" && _Product.ProductCode.Substring(0, 1) != "K" &&
+                            (PriorityTarget == "VM" || PriorityTarget == "VM+"))
+                            if (!_Product.ProductNote.Contains(CustomerRegion == "Miền Bắc" ? "North" : "South"))
+                                continue;
 
-                    // Dealing with cases of some Products that will not go to either region, from Lâm Đồng
+                        // Dealing with cases of some Products that will not go to either region, from Lâm Đồng
 
-                    //var _ProductCrossRegion = new ProductCrossRegion();
-                    if (coreStructure.dicProductCrossRegion.TryGetValue(_Product.ProductId,
-                            out var _ProductCrossRegion) && SupplierRegion == "Lâm Đồng")
-                        switch (CustomerRegion)
-                        {
-                            case "Miền Bắc":
-                                if (!_ProductCrossRegion.ToNorth) continue;
-                                break;
-                            case "Miền Nam":
-                                if (!_ProductCrossRegion.ToSouth) continue;
-                                break;
-                            default: break;
-                        }
+                        //var _ProductCrossRegion = new ProductCrossRegion();
+                        if (coreStructure.dicProductCrossRegion.TryGetValue(_Product.ProductId,
+                                out var _ProductCrossRegion) && SupplierRegion == "Lâm Đồng")
+                            switch (CustomerRegion)
+                            {
+                                case "Miền Bắc":
+                                    if (!_ProductCrossRegion.ToNorth) continue;
+                                    break;
+                                case "Miền Nam":
+                                    if (!_ProductCrossRegion.ToSouth) continue;
+                                    break;
+                                default: break;
+                            }
 
-                    #region Demand from Chosen Customers.
+                        #region Demand from Chosen Customers.
 
-                    // Total Order.
-                    var SumTarget = coreStructure.dicPO[DatePO][_Product]
-                        .Where(x =>
-                            coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion == CustomerRegion &&
-                            x.Value &&
-                            (PriorityTarget == ""
-                                ? true
-                                : coreStructure.dicCustomer[x.Key.CustomerId].CustomerType == PriorityTarget))
-                        .Sum(x => x.Key.QuantityOrderKg); // Sum of Demand.
-
-                    var SumVM = PriorityTarget.Contains("VM+")
-                        ? coreStructure.dicPO[DatePO][_Product]
+                        // Total Order.
+                        var SumTarget = coreStructure.dicPO[DatePO][_Product]
                             .Where(x =>
                                 coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion == CustomerRegion &&
                                 x.Value &&
-                                coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM") &&
-                                coreStructure.dicCustomer[x.Key.CustomerId].CustomerType != PriorityTarget)
-                            .Sum(x => x.Key.QuantityOrderKg)
-                        : 0; // Sum of Demand.
+                                (PriorityTarget == ""
+                                    ? true
+                                    : coreStructure.dicCustomer[x.Key.CustomerId].CustomerType == PriorityTarget))
+                            .Sum(x => x.Key.QuantityOrderKg); // Sum of Demand.
 
-                    var SumSameRegion = SumTarget + SumVM;
-
-                    if (SupplierRegion == "Lâm Đồng")
-                    {
-                        var _DatePO = CustomerRegion == "Miền Nam" ? DatePO.AddDays(3) : DatePO.AddDays(-3);
-                        if (coreStructure.dicPO.ContainsKey(_DatePO) &&
-                            coreStructure.dicPO[_DatePO].ContainsKey(_Product))
-                        {
-                            var _CustomerRegion = CustomerRegion == "Miền Nam" ? "Miền Bắc" : "Miền Nam";
-                            SumTarget += coreStructure.dicPO[_DatePO][_Product]
+                        var SumVM = PriorityTarget.Contains("VM+")
+                            ? coreStructure.dicPO[DatePO][_Product]
                                 .Where(x =>
-                                    coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion ==
-                                    _CustomerRegion &&
+                                    coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion == CustomerRegion &&
                                     x.Value &&
-                                    (PriorityTarget != ""
-                                        ? coreStructure.dicCustomer[x.Key.CustomerId].CustomerType == PriorityTarget
-                                        : true))
-                                .Sum(x => x.Key.QuantityOrderKg);
+                                    coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM") &&
+                                    coreStructure.dicCustomer[x.Key.CustomerId].CustomerType != PriorityTarget)
+                                .Sum(x => x.Key.QuantityOrderKg)
+                            : 0; // Sum of Demand.
 
-                            SumVM += PriorityTarget.Contains("VM+")
-                                ? coreStructure.dicPO[_DatePO][_Product]
+                        var SumSameRegion = SumTarget + SumVM;
+
+                        if (SupplierRegion == "Lâm Đồng")
+                        {
+                            var _DatePO = CustomerRegion == "Miền Nam" ? DatePO.AddDays(3) : DatePO.AddDays(-3);
+                            if (coreStructure.dicPO.ContainsKey(_DatePO) &&
+                                coreStructure.dicPO[_DatePO].ContainsKey(_Product))
+                            {
+                                var _CustomerRegion = CustomerRegion == "Miền Nam" ? "Miền Bắc" : "Miền Nam";
+                                SumTarget += coreStructure.dicPO[_DatePO][_Product]
                                     .Where(x =>
                                         coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion ==
                                         _CustomerRegion &&
                                         x.Value &&
-                                        coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM") &&
-                                        coreStructure.dicCustomer[x.Key.CustomerId].CustomerType !=
-                                        PriorityTarget)
-                                    .Sum(x => x.Key.QuantityOrderKg)
-                                : 0; // Sum of Demand.
+                                        (PriorityTarget != ""
+                                            ? coreStructure.dicCustomer[x.Key.CustomerId].CustomerType == PriorityTarget
+                                            : true))
+                                    .Sum(x => x.Key.QuantityOrderKg);
+
+                                SumVM += PriorityTarget.Contains("VM+")
+                                    ? coreStructure.dicPO[_DatePO][_Product]
+                                        .Where(x =>
+                                            coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion ==
+                                            _CustomerRegion &&
+                                            x.Value &&
+                                            coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM") &&
+                                            coreStructure.dicCustomer[x.Key.CustomerId].CustomerType !=
+                                            PriorityTarget)
+                                        .Sum(x => x.Key.QuantityOrderKg)
+                                    : 0; // Sum of Demand.
+                            }
                         }
-                    }
 
-                    #endregion
+                        #endregion
 
-                    // Optimization. Skip if Demand = 0.
-                    //if (sumVCM == 0)
-                    //    continue;
+                        // Optimization. Skip if Demand = 0.
+                        //if (sumVCM == 0)
+                        //    continue;
 
-                    // To deal with Minimum Order Quantity.
-                    double wallet = 0;
-                    //var wallet = new Dictionary<Guid, double>();
+                        // To deal with Minimum Order Quantity.
+                        double wallet = 0;
+                        //var wallet = new Dictionary<Guid, double>();
 
-                    //foreach (var _SupplierId in coreStructure.dicSupplier.Keys)
-                    //{
-                    //    if (!wallet.ContainsKey(_SupplierId))
-                    //        wallet.Add(_SupplierId, 0);
-                    //}
+                        //foreach (var _SupplierId in coreStructure.dicSupplier.Keys)
+                        //{
+                        //    if (!wallet.ContainsKey(_SupplierId))
+                        //        wallet.Add(_SupplierId, 0);
+                        //}
 
-                    // Grabbing Suppliers by Harvest days.
-                    // One for all, one for Lâm Đồng coz Suppliers from there supply both regions.
+                        // Grabbing Suppliers by Harvest days.
+                        // One for all, one for Lâm Đồng coz Suppliers from there supply both regions.
 
-                    var _dicProductFC =
-                        coreStructure.dicFC.FirstOrDefault(x => x.Key.Date == DatePO.AddDays(-dayBefore));
+                        var _dicProductFC =
+                            coreStructure.dicFC.FirstOrDefault(x => x.Key.Date == DatePO.AddDays(-dayBefore));
 
-                    var _dicProductFcLd =
-                        coreStructure.dicFC.FirstOrDefault(x => x.Key.Date == DatePO.AddDays(-dayLdBefore));
+                        var _dicProductFcLd =
+                            coreStructure.dicFC.FirstOrDefault(x => x.Key.Date == DatePO.AddDays(-dayLdBefore));
 
-                    //// Optimization. Skip if No Supplier.
-                    //if (_dicProductFC.Value != null && _dicProductFcLd.Value == null)
-                    //    continue;
+                        //// Optimization. Skip if No Supplier.
+                        //if (_dicProductFC.Value != null && _dicProductFcLd.Value == null)
+                        //    continue;
 
-                    if (SumTarget != 0 && _dicProductFC.Value != null)
-                    {
-                        double sumThuMuaLd = 0;
-                        double sumFarmLd = 0;
-
-                        #region Supply from Lâm Đồng
-
-                        if (SupplierRegion != "Lâm Đồng" && _dicProductFcLd.Value != null)
+                        if (SumTarget != 0 && _dicProductFC.Value != null)
                         {
-                            // Check if Inventory has stock in other places.
-                            // If no, equally distributed stuff.
-                            // If yes, hah hah hah no.
-                            var dicSupplierLdFC =
-                                _dicProductFcLd.Value.FirstOrDefault(x => x.Key.ProductCode == _Product.ProductCode);
-                            if (dicSupplierLdFC.Value != null)
-                            {
-                                // Check Lâm Đồng
-                                // Please NEVER FullOrder == true.
-                                //var _SupplierThuMuaLd = 
+                            double sumThuMuaLd = 0;
+                            double sumFarmLd = 0;
 
-                                var _dicSupplierLdFC = dicSupplierLdFC.Value
+                            var flagFullOrder = false;
+
+                            #region Supply from Lâm Đồng
+
+                            if (SupplierRegion != "Lâm Đồng" && _dicProductFcLd.Value != null)
+                            {
+                                // Check if Inventory has stock in other places.
+                                // If no, equally distributed stuff.
+                                // If yes, hah hah hah no.
+                                var dicSupplierLdFC =
+                                    _dicProductFcLd.Value.FirstOrDefault(x => x.Key.ProductCode == _Product.ProductCode);
+                                if (dicSupplierLdFC.Value != null)
+                                {
+                                    // Check Lâm Đồng
+                                    // Please NEVER FullOrder == true.
+                                    //var _SupplierThuMuaLd = 
+
+                                    var _dicSupplierLdFC = dicSupplierLdFC.Value
+                                        .Where(x =>
+                                            coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == "Lâm Đồng" &&
+                                            (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
+                                            (YesNoKPI
+                                                ? x.Key.QuantityForecastPlanned
+                                                : YesNoContracted
+                                                    ? x.Key.QuantityForecastContracted
+                                                    : x.Key.QuantityForecast) > 0);
+
+                                    // Normal case
+                                    sumFarmLd = _dicSupplierLdFC
+                                        .Where(x =>
+                                            coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == "VinEco")
+                                        .Sum(x => x.Key.QuantityForecast);
+
+                                    sumThuMuaLd = _dicSupplierLdFC
+                                        .Where(x =>
+                                            coreStructure.dicSupplier[x.Key.SupplierId].SupplierType != "VinEco" &&
+                                            x.Key.Availability.Contains(
+                                                Convert.ToString((int)DatePO.AddDays(-dayLdBefore).DayOfWeek + 1)))
+                                        .Sum(x => x.Key.QuantityForecast);
+
+                                    flagFullOrder = dicSupplierLdFC.Value
+                                        .Any(x =>
+                                            coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == "Lâm Đồng" &&
+                                            (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
+                                            x.Key.FullOrder);
+                                }
+                            }
+
+                            #endregion
+
+                            var dicSupplierFC =
+                                _dicProductFC.Value.FirstOrDefault(x => x.Key.ProductCode == _Product.ProductCode);
+
+                            if (dicSupplierFC.Value != null)
+                            {
+                                #region Total Supply.
+
+                                var _resultSupplier = dicSupplierFC.Value
                                     .Where(x =>
-                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == "Lâm Đồng" &&
+                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == "VinEco" &&
+                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == SupplierType &&
+                                        (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
+                                        (SupplierType != "VinEco"
+                                            ? x.Key.Availability.Contains(
+                                                Convert.ToString((int)DatePO.AddDays(-dayBefore).DayOfWeek + 1))
+                                            : true));
+
+                                var _dicSupplierFC = dicSupplierFC.Value
+                                    .Where(x =>
+                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == SupplierRegion &&
                                         (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
                                         (YesNoKPI
                                             ? x.Key.QuantityForecastPlanned
@@ -3927,414 +3979,367 @@ namespace ChiaHang
                                                 ? x.Key.QuantityForecastContracted
                                                 : x.Key.QuantityForecast) > 0);
 
-                                // Normal case
-                                sumFarmLd = _dicSupplierLdFC
+                                var sumFarm = _dicSupplierFC
                                     .Where(x =>
                                         coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == "VinEco")
                                     .Sum(x => x.Key.QuantityForecast);
 
-                                sumThuMuaLd = _dicSupplierLdFC
+                                var sumThuMua = _dicSupplierFC
                                     .Where(x =>
                                         coreStructure.dicSupplier[x.Key.SupplierId].SupplierType != "VinEco" &&
                                         x.Key.Availability.Contains(
-                                            Convert.ToString((int) DatePO.AddDays(-dayLdBefore).DayOfWeek + 1)))
+                                            Convert.ToString((int)DatePO.AddDays(-dayBefore).DayOfWeek + 1)))
                                     .Sum(x => x.Key.QuantityForecast);
-                            }
-                        }
 
-                        #endregion
+                                //_resultSupplier
+                                //    .Sum(x => YesNoKPI ? x.Key.QuantityForecastPlanned : YesNoContracted ? x.Key.QuantityForecastContracted : x.Key.QuantityForecast);
 
-                        var dicSupplierFC =
-                            _dicProductFC.Value.FirstOrDefault(x => x.Key.ProductCode == _Product.ProductCode);
+                                if (!flagFullOrder)
+                                    flagFullOrder = dicSupplierFC.Value
+                                        .Any(x =>
+                                            coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == SupplierRegion &&
+                                            (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
+                                            x.Key.FullOrder);
 
-                        if (dicSupplierFC.Value != null)
-                        {
-                            #region Total Supply.
+                                var sumVE = sumFarm + sumThuMua;
 
-                            var _resultSupplier = dicSupplierFC.Value
-                                .Where(x =>
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == "VinEco" &&
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == SupplierType &&
-                                    (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
-                                    (SupplierType != "VinEco"
-                                        ? x.Key.Availability.Contains(
-                                            Convert.ToString((int) DatePO.AddDays(-dayBefore).DayOfWeek + 1))
-                                        : true));
+                                var _DatePO = SupplierRegion == "Miền Bắc"
+                                    ? DatePO.AddDays(-2).Date
+                                    : DatePO.AddDays(2).Date;
+                                if (CustomerRegion == "Miền Nam" && coreStructure.dicPO.ContainsKey(_DatePO) &&
+                                    coreStructure.dicPO[_DatePO].ContainsKey(_Product))
+                                    sumVE += Math.Max(sumFarmLd + sumThuMuaLd - coreStructure.dicPO[_DatePO][_Product]
+                                                          .Where(x =>
+                                                              coreStructure.dicCustomer[x.Key.CustomerId]
+                                                                  .CustomerBigRegion ==
+                                                              (CustomerRegion == "Miền Bắc" ? "Miền Nam" : "Miền Bắc") &&
+                                                              x.Value)
+                                                          .Sum(x => x.Key.QuantityOrderKg), 0);
+                                else
+                                    sumVE += sumFarmLd + sumThuMuaLd;
 
-                            var _dicSupplierFC = dicSupplierFC.Value
-                                .Where(x =>
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == SupplierRegion &&
-                                    (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
-                                    (YesNoKPI
-                                        ? x.Key.QuantityForecastPlanned
-                                        : YesNoContracted
-                                            ? x.Key.QuantityForecastContracted
-                                            : x.Key.QuantityForecast) > 0);
+                                //if (_resultSupplier
+                                //        .FirstOrDefault(x => YesNoKPI || YesNoContracted ? false : x.Key.FullOrder)
+                                //        .Key != null)
+                                //    flagFullOrder = true;
 
-                            var sumFarm = _dicSupplierFC
-                                .Where(x =>
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == "VinEco")
-                                .Sum(x => x.Key.QuantityForecast);
+                                //flagFullOrder = _resultSupplier.Any(x =>
+                                //    (YesNoKPI || YesNoContracted)
+                                //        ? false
+                                //        : x.Key.FullOrder);
 
-                            var sumThuMua = _dicSupplierFC
-                                .Where(x =>
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierType != "VinEco" &&
-                                    x.Key.Availability.Contains(
-                                        Convert.ToString((int) DatePO.AddDays(-dayBefore).DayOfWeek + 1)))
-                                .Sum(x => x.Key.QuantityForecast);
+                                #endregion
 
-                            //_resultSupplier
-                            //    .Sum(x => YesNoKPI ? x.Key.QuantityForecastPlanned : YesNoContracted ? x.Key.QuantityForecastContracted : x.Key.QuantityForecast);
-
-                            var flagFullOrder = false;
-
-                            var sumVE = sumFarm + sumThuMua;
-
-                            var _DatePO = SupplierRegion == "Miền Bắc"
-                                ? DatePO.AddDays(-2).Date
-                                : DatePO.AddDays(2).Date;
-                            if (CustomerRegion == "Miền Nam" && coreStructure.dicPO.ContainsKey(_DatePO) &&
-                                coreStructure.dicPO[_DatePO].ContainsKey(_Product))
-                                sumVE += Math.Max(sumFarmLd + sumThuMuaLd - coreStructure.dicPO[_DatePO][_Product]
-                                                      .Where(x =>
-                                                          coreStructure.dicCustomer[x.Key.CustomerId]
-                                                              .CustomerBigRegion ==
-                                                          (CustomerRegion == "Miền Bắc" ? "Miền Nam" : "Miền Bắc") &&
-                                                          x.Value)
-                                                      .Sum(x => x.Key.QuantityOrderKg), 0);
-                            else
-                                sumVE += sumFarmLd + sumThuMuaLd;
-
-                            if (_resultSupplier
-                                    .FirstOrDefault(x => YesNoKPI || YesNoContracted ? false : x.Key.FullOrder).Key !=
-                                null)
-                                flagFullOrder = true;
-                            //else
-                            //{
-                            //sumVE = _resultSupplier
-                            //    .Sum(x => YesNoKPI ? x.Key.QuantityForecastPlanned : YesNoContracted ? x.Key.QuantityForecastContracted : x.Key.QuantityForecast);  // Sum of Supply
-                            //sumVE = sumFarm + sumThuMua + sumFarmLd + sumThuMuaLd;
-                            //}
-
-                            #endregion
-
-                            if (sumVE > 0)
-                            {
-                                if (_Product.ProductCode == "A00601" && SupplierType == "ThuMua" &&
-                                    DatePO.Day == 02 && SupplierRegion == "Lâm Đồng" &&
-                                    PriorityTarget == "VM+ VinEco")
+                                if (sumVE > 0)
                                 {
-                                    byte FuckingFuckThisShit = 0;
-                                    FuckingFuckThisShit++;
-                                }
 
-                                #region Rate.
+                                    #region Rate.
 
-                                //
-                                // Hack - Freaking need to dissect this part.
-                                // Todo - Further Optimization.
+                                    //
+                                    // Hack - Freaking need to dissect this part.
+                                    // Todo - Further Optimization.
 
-                                // For fuck sake, this is the hardest to code part.
-                                // Also very important. Too important.
+                                    // For fuck sake, this is the hardest to code part.
+                                    // Also very important. Too important.
 
-                                // Rate = Supply / Demand --> Deli = Demand * Rate.
-                                var rate = sumVE / (SumTarget + SumVM);
+                                    // Rate = Supply / Demand --> Deli = Demand * Rate.
+                                    var rate = sumVE / (SumTarget + SumVM);
 
-                                // If Screw-the-upper-limit flag is up.
-                                if (flagFullOrder)
-                                    rate = PriorityTarget == "VM+ VinEco" ? 1 : UpperLimit;
-                                // If it's VinCommerce's Supplier, always 1.
-                                else if (rate < 1 && SupplierType == "VCM" && sumVE > 0)
-                                    rate = UpperLimit;
-                                // Otherwise, in case of an UpperLimit, obey it
-                                else if (!flagFullOrder)
-                                    if (rate < 1)
-                                    {
-                                        if (rate < 1 && PriorityTarget != "")
-                                        {
-                                            rate = Math.Min(sumVE / SumTarget, 1);
-                                        }
-                                        else if (rate < 1)
-                                        {
-                                            rate = Math.Min(sumVE / SumSameRegion, 1);
-                                            if (rate < 1)
-                                                rate = Math.Min(sumVE / SumTarget, 1);
-                                        }
+                                    // If Screw-the-upper-limit flag is up.
+                                    if (flagFullOrder)
+                                        rate = PriorityTarget == "VM+ VinEco"
+                                            ? 1
+                                            : (UpperLimit > 0 ? Math.Min(rate, UpperLimit) : rate);
+                                    // If it's VinCommerce's Supplier, always 1.
+                                    else if (rate < 1 && SupplierType == "VCM" && sumVE > 0)
+                                        rate = UpperLimit;
+                                    // Otherwise, in case of an UpperLimit, obey it
+                                    else if (!flagFullOrder)
                                         if (rate < 1)
+                                        {
+                                            if (rate < 1 && PriorityTarget != "")
+                                            {
+                                                rate = Math.Min(sumVE / SumTarget, 1);
+                                            }
+                                            else if (rate < 1)
+                                            {
+                                                rate = Math.Min(sumVE / SumSameRegion, 1);
+                                                if (rate < 1)
+                                                    rate = Math.Min(sumVE / SumTarget, 1);
+                                            }
+                                            if (rate < 1)
+                                                rate = SupplierRegion != "Lâm Đồng" &&
+                                                       (YesNoKPI || sumFarm > 0 || sumFarmLd > 0 || sumThuMua > 0 ||
+                                                        sumThuMuaLd > 0)
+                                                    ? Math.Max(rate, 1)
+                                                    : rate;
+                                            if (SupplierRegion == "Lâm Đồng" && rate < 1 && PriorityTarget == "")
+                                                rate = sumVE / SumSameRegion;
+                                        }
+                                        else if (rate > 1)
+                                        {
+                                            //if (sumVcmMN > sumVCM)
+                                            //{
+                                            //    rate = 1;
+                                            //}
+                                            /*else */
+                                            //if ((sumFarm + sumFarmLd + sumThuMua + sumThuMuaLd) / (sumVCM + sumVM) > 1)
+                                            //{
+                                            rate = (sumFarm + sumFarmLd + sumThuMua + sumThuMuaLd) / (SumTarget + SumVM);
                                             rate = SupplierRegion != "Lâm Đồng" &&
                                                    (YesNoKPI || sumFarm > 0 || sumFarmLd > 0 || sumThuMua > 0 ||
                                                     sumThuMuaLd > 0)
                                                 ? Math.Max(rate, 1)
                                                 : rate;
-                                        if (SupplierRegion == "Lâm Đồng" && rate < 1 && PriorityTarget == "")
-                                            rate = sumVE / SumSameRegion;
-                                    }
-                                    else if (rate > 1)
-                                    {
-                                        //if (sumVcmMN > sumVCM)
-                                        //{
-                                        //    rate = 1;
-                                        //}
-                                        /*else */
-                                        //if ((sumFarm + sumFarmLd + sumThuMua + sumThuMuaLd) / (sumVCM + sumVM) > 1)
-                                        //{
-                                        rate = (sumFarm + sumFarmLd + sumThuMua + sumThuMuaLd) / (SumTarget + SumVM);
-                                        rate = SupplierRegion != "Lâm Đồng" &&
-                                               (YesNoKPI || sumFarm > 0 || sumFarmLd > 0 || sumThuMua > 0 ||
-                                                sumThuMuaLd > 0)
-                                            ? Math.Max(rate, 1)
-                                            : rate;
-                                        //}
-                                    }
-                                rate = UpperLimit > 0 ? Math.Min(rate, UpperLimit) : rate;
-                                if (_Product.ProductCode.Substring(0, 1) == "K")
-                                    rate = Math.Min(rate, 1);
-                                //rate = Math.Max(rate, 1);
+                                            //}
+                                        }
 
-                                #endregion
+                                    rate = UpperLimit > 0 ? Math.Min(rate, UpperLimit) : rate;
+                                    if (_Product.ProductCode.Substring(0, 1) == "K")
+                                        rate = Math.Min(rate, 1);
+                                    //rate = Math.Max(rate, 1);
 
-                                // Only the bravest would tread deeper.
-                                // ... I was once young, brave and foolish ...
+                                    #endregion
 
-                                // Optimization - Filtering Customer Orders that has been dealt with.
-                                //var ValidCustomerList = ListCustomerOrder.Keys
-                                //        .Where(x =>
-                                //            (x.QuantityOrderKg >= 0.1) &&
-                                //            (coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == CustomerRegion) &&
-                                //            (PriorityTarget != "" ? coreStructure.dicCustomer[x.CustomerId].CustomerType == PriorityTarget : true) &&
-                                //            (x.DesiredRegion == null ? true : x.DesiredRegion == SupplierRegion) &&
-                                //            (x.DesiredSource == null ? true : x.DesiredSource == SupplierType))
-                                //        //.OrderByDescending(x => coreStructure.dicCustomer[x.CustomerId].CustomerCode)
-                                //        .OrderBy(x => x.QuantityOrderKg)
-                                //        .Reverse()
-                                //        .ToList();
+                                    // Only the bravest would tread deeper.
+                                    // ... I was once young, brave and foolish ...
 
-                                //var ListCustomerOrder = coreStructure.dicPO[DatePO][_Product].Where(x => x.Value == true).ToDictionary(x => x.Key);
-
-                                // Customer Layer
-                                foreach (var _CustomerOrder in coreStructure.dicPO[DatePO][_Product]
-                                        .Where(x => x.Value).ToDictionary(x => x.Key).Keys
-                                        .Where(x => x.QuantityOrderKg >= 0.1)
-                                        .Where(x =>
-                                            coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion ==
-                                            CustomerRegion &&
-                                            (PriorityTarget != ""
-                                                ? coreStructure.dicCustomer[x.CustomerId].CustomerType == PriorityTarget
-                                                : true) &&
-                                            (x.DesiredRegion == null ? true : x.DesiredRegion == SupplierRegion) &&
-                                            (x.DesiredSource == null ? true : x.DesiredSource == SupplierType))
-                                        //.OrderByDescending(x => coreStructure.dicCustomer[x.CustomerId].CustomerCode)
-                                        .OrderBy(x => x.QuantityOrderKg)
-                                        .Reverse())
-                                    // Todo - Change this to false when doing Planning
-                                    if (true)
-                                    {
-                                        #region Qualified Suppliers.
-
-                                        SupplierForecast _SupplierForecast = null;
-
-                                        var _dicSupplierFC_inner = dicSupplierFC.Value
-                                            .Where(x => x.Key.QuantityForecast >= _MOQ)
-                                            .Where(x => coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion ==
-                                                        SupplierRegion &&
-                                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierType ==
-                                                        SupplierType &&
-                                                        (SupplierType != "VinEco"
-                                                            ? x.Key.Availability.Contains(
-                                                                Convert.ToString(
-                                                                    (int) DatePO.AddDays(-dayBefore).DayOfWeek + 1))
-                                                            : true) &&
-                                                        (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
-                                                        (CrossRegion ? x.Key.CrossRegion : true))
-                                            .OrderBy(x => x.Key.Level)
-                                            .ThenByDescending(x => x.Key.FullOrder)
-                                            .ThenBy(x =>
-                                                coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][x.Key])
-                                            .ThenByDescending(x => x.Key.QuantityForecast)
-                                            .ThenByDescending(x => x.Key.LabelVinEco);
-
-                                        var result = _dicSupplierFC_inner
+                                    // Customer Layer
+                                    foreach (var _CustomerOrder in coreStructure.dicPO[DatePO][_Product]
+                                            .Where(x => x.Value).ToDictionary(x => x.Key).Keys
+                                            .Where(x => x.QuantityOrderKg >= _MOQ)
                                             .Where(x =>
-                                                YesNoKPI
-                                                    ? x.Key.QuantityForecastPlanned >=
-                                                      _CustomerOrder.QuantityOrderKg * rate
-                                                    : YesNoContracted
-                                                        ? x.Key.QuantityForecastContracted >=
-                                                          _CustomerOrder.QuantityOrderKg * rate
-                                                        : (x.Key.FullOrder
-                                                            ? true
-                                                            : x.Key.QuantityForecast >=
-                                                              _CustomerOrder.QuantityOrderKg * rate));
+                                                coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion ==
+                                                CustomerRegion &&
+                                                (PriorityTarget != ""
+                                                    ? coreStructure.dicCustomer[x.CustomerId].CustomerType == PriorityTarget
+                                                    : true) &&
+                                                (x.DesiredRegion == null ? true : x.DesiredRegion == SupplierRegion) &&
+                                                (x.DesiredSource == null ? true : x.DesiredSource == SupplierType))
+                                            //.OrderByDescending(x => coreStructure.dicCustomer[x.CustomerId].CustomerCode)
+                                            .OrderBy(x => x.QuantityOrderKg)
+                                            .Reverse())
+                                        // Todo - Change this to false when doing Planning
+                                        if (true)
+                                        {
+                                            #region Qualified Suppliers.
 
-                                        if (!result.Any())
-                                            result = _dicSupplierFC_inner
+                                            SupplierForecast _SupplierForecast = null;
+
+                                            var _dicSupplierFC_inner = dicSupplierFC.Value
+                                                .Where(x => x.Key.QuantityForecast >= _MOQ)
+                                                .Where(x =>
+                                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion ==
+                                                    SupplierRegion &&
+                                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierType ==
+                                                    SupplierType &&
+                                                    (SupplierType != "VinEco"
+                                                        ? x.Key.Availability.Contains(
+                                                            Convert.ToString(
+                                                                (int)DatePO.AddDays(-dayBefore).DayOfWeek + 1))
+                                                        : true) &&
+                                                    (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
+                                                    (CrossRegion ? x.Key.CrossRegion : true))
+                                                .OrderBy(x => x.Key.Level)
+                                                .ThenByDescending(x => x.Key.FullOrder)
+                                                .ThenBy(x =>
+                                                    coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][x.Key])
+                                                .ThenByDescending(x => x.Key.QuantityForecast)
+                                                .ThenByDescending(x => x.Key.LabelVinEco);
+
+                                            var result = _dicSupplierFC_inner
                                                 .Where(x =>
                                                     YesNoKPI
-                                                        ? x.Key.QuantityForecastPlanned >= _MOQ
+                                                        ? x.Key.QuantityForecastPlanned >=
+                                                          _CustomerOrder.QuantityOrderKg * rate
                                                         : YesNoContracted
-                                                            ? x.Key.QuantityForecastContracted >= _MOQ
+                                                            ? x.Key.QuantityForecastContracted >=
+                                                              _CustomerOrder.QuantityOrderKg * rate
                                                             : (x.Key.FullOrder
                                                                 ? true
-                                                                : x.Key.QuantityForecast >= _MOQ));
+                                                                : x.Key.QuantityForecast >=
+                                                                  _CustomerOrder.QuantityOrderKg * rate));
 
-                                        if (!result.Any())
-                                            continue;
+                                            if (!result.Any())
+                                                result = _dicSupplierFC_inner
+                                                    .Where(x =>
+                                                        YesNoKPI
+                                                            ? x.Key.QuantityForecastPlanned >= _MOQ
+                                                            : YesNoContracted
+                                                                ? x.Key.QuantityForecastContracted >= _MOQ
+                                                                : (x.Key.FullOrder
+                                                                    ? true
+                                                                    : x.Key.QuantityForecast >= _MOQ));
 
-                                        // Coz for fuck sake, it can return null
-                                        var totalSupplier = _dicSupplierFC_inner.Count();
-                                        //_SupplierForecast = result.Key;
-                                        if (totalSupplier != 0)
-                                        {
-                                            var _result = result.Aggregate((l, r) =>
-                                                coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][l.Key] <
-                                                coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][r.Key]
-                                                    ? l
-                                                    : r).Key;
-                                            if (_result != null && SupplierType == "ThuMua")
-                                                _SupplierForecast = _result;
+                                            if (!result.Any())
+                                                continue;
+
+                                            // Coz for fuck sake, it can return null
+                                            var totalSupplier = result.Count();
+                                            //_SupplierForecast = result.Key;
+                                            if (totalSupplier != 0)
+                                            {
+                                                var _result = result.Aggregate((l, r) =>
+                                                    coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][l.Key] <
+                                                    coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][r.Key]
+                                                        ? l
+                                                        : r).Key;
+                                                if (_result != null && SupplierType == "ThuMua")
+                                                    _SupplierForecast = _result;
+                                                else
+                                                    _SupplierForecast = result.FirstOrDefault().Key;
+                                            }
                                             else
-                                                _SupplierForecast = result.FirstOrDefault().Key;
-                                        }
-                                        else
-                                        {
-                                            // Counter situation where there is no Supplier with Forecast greater than PO
-                                            _SupplierForecast = _dicSupplierFC_inner
-                                                .FirstOrDefault(x =>
-                                                    YesNoKPI
-                                                        ? x.Key.QuantityForecastPlanned >= _MOQ
-                                                        : YesNoContracted
-                                                            ? x.Key.QuantityForecastContracted >= _MOQ
-                                                            : x.Key.QuantityForecast >= _MOQ).Key;
+                                            {
+                                                // Counter situation where there is no Supplier with Forecast greater than PO
+                                                _SupplierForecast = _dicSupplierFC_inner
+                                                    .FirstOrDefault(x =>
+                                                        YesNoKPI
+                                                            ? x.Key.QuantityForecastPlanned >= _MOQ
+                                                            : YesNoContracted
+                                                                ? x.Key.QuantityForecastContracted >= _MOQ
+                                                                : x.Key.QuantityForecast >= _MOQ).Key;
 
-                                            totalSupplier = _dicSupplierFC_inner
-                                                .Count(x =>
-                                                    YesNoKPI
-                                                        ? x.Key.QuantityForecastPlanned >= _MOQ
-                                                        : YesNoContracted
-                                                            ? x.Key.QuantityForecastContracted >= _MOQ
-                                                            : x.Key.QuantityForecast >= _MOQ);
-                                        }
+                                                totalSupplier = _dicSupplierFC_inner
+                                                    .Count(x =>
+                                                        YesNoKPI
+                                                            ? x.Key.QuantityForecastPlanned >= _MOQ
+                                                            : YesNoContracted
+                                                                ? x.Key.QuantityForecastContracted >= _MOQ
+                                                                : x.Key.QuantityForecast >= _MOQ);
+                                            }
 
-                                        #endregion
+                                            #endregion
 
-                                        var _rate = rate;
+                                            var _rate = rate;
 
-                                        if ((sumFarm + sumThuMua) * (sumFarmLd + sumThuMuaLd) > 0)
-                                            _rate = Math.Min(_rate, UpperLimit);
-                                        if (coreStructure.dicPO[DatePO][_Product].Count <= totalSupplier && rate < 1)
-                                            _rate = UpperLimit;
+                                            if ((sumFarm + sumThuMua) * (sumFarmLd + sumThuMuaLd) > 0)
+                                                _rate = Math.Min(_rate, UpperLimit);
+                                            if (coreStructure.dicPO[DatePO][_Product].Count <= totalSupplier &&
+                                                rate < 1)
+                                                _rate = UpperLimit;
 
-                                        _rate = Math.Max(_rate, 1);
-                                        _rate = PriorityTarget == "VM+ VinEco" ? Math.Min(_rate, 1) : _rate;
+                                            _rate = Math.Max(_rate, 1);
+                                            _rate = PriorityTarget == "VM+ VinEco"
+                                                ? Math.Min(_rate, 1)
+                                                : _rate;
 
-                                        if (_SupplierForecast != null)
-                                            if (coreStructure.dicCoord.TryGetValue(DatePO, out var _dicCoordProduct))
-                                                if (_dicCoordProduct.TryGetValue(_Product, out var _dicCoordCusSup))
-                                                    if (_dicCoordCusSup.TryGetValue(_CustomerOrder,
-                                                            out var _SupplierForecastCoord) &&
-                                                        _SupplierForecastCoord == null)
-                                                    {
-                                                        wallet +=
-                                                        (YesNoKPI || YesNoContracted
-                                                            ? false
-                                                            : _SupplierForecast.FullOrder)
-                                                            ? _CustomerOrder.QuantityOrderKg
-                                                            : Math.Round(_CustomerOrder.QuantityOrderKg * _rate, 1);
-
-                                                        #region MOQ.
-
-                                                        if (wallet < _MOQ &&
-                                                            (YesNoKPI
-                                                                ? _SupplierForecast.QuantityForecastPlanned
-                                                                : (YesNoContracted
-                                                                    ? _SupplierForecast.QuantityForecastContracted
-                                                                    : _SupplierForecast.QuantityForecast)) >= _MOQ)
-                                                            wallet = _MOQ;
-
-                                                        //if (_MOQ == 0.05)
-                                                        //{
-                                                        //    // Let's hope this will never be hit.
-                                                        //    // I fucking do hope that.
-                                                        //    string OhMyFuckingGodWhy = "Holy shit idk, why, oh god, why";
-                                                        //}
-
-                                                        #endregion
-
-                                                        if (wallet < _MOQ && PriorityTarget != "") wallet = _MOQ;
-
-                                                        wallet = Math.Max(wallet, _MOQ);
-                                                        if ( /*wallet >= _MOQ &&*/
-                                                            _SupplierForecast.QuantityForecast >= _MOQ)
+                                            if (_SupplierForecast != null)
+                                                if (coreStructure.dicCoord.TryGetValue(DatePO, out var _dicCoordProduct))
+                                                    if (_dicCoordProduct.TryGetValue(_Product, out var _dicCoordCusSup))
+                                                        if (_dicCoordCusSup.TryGetValue(_CustomerOrder,
+                                                                out var _SupplierForecastCoord) &&
+                                                            _SupplierForecastCoord == null)
                                                         {
-                                                            //if (sumVE <= 0) { continue; }
-                                                            // Honestly, this should never be hit
-                                                            // Jk I changed stuff. This should ALWAYS be hit
+                                                            wallet +=
+                                                            (YesNoKPI || YesNoContracted
+                                                                ? false
+                                                                : _SupplierForecast.FullOrder)
+                                                                ? _CustomerOrder.QuantityOrderKg
+                                                                : Math.Round(_CustomerOrder.QuantityOrderKg * _rate, 1);
 
-                                                            //double _QuantityForecast = Math.Min(wallet, _SupplierForecast.QuantityForecast, _CustomerOrder.QuantityOrderKg * _rate);
-                                                            var _QuantityForecast = new[]
+                                                            #region MOQ.
+
+                                                            if (wallet < _MOQ &&
+                                                                (YesNoKPI
+                                                                    ? _SupplierForecast.QuantityForecastPlanned
+                                                                    : (YesNoContracted
+                                                                        ? _SupplierForecast.QuantityForecastContracted
+                                                                        : _SupplierForecast.QuantityForecast)) >= _MOQ)
+                                                                wallet = _MOQ;
+
+                                                            //if (_MOQ == 0.05)
+                                                            //{
+                                                            //    // Let's hope this will never be hit.
+                                                            //    // I fucking do hope that.
+                                                            //    string OhMyFuckingGodWhy = "Holy shit idk, why, oh god, why";
+                                                            //}
+
+                                                            #endregion
+
+                                                            if (wallet < _MOQ && PriorityTarget != "") wallet = _MOQ;
+
+                                                            wallet = Math.Max(wallet, _MOQ);
+                                                            if ( /*wallet >= _MOQ &&*/
+                                                                _SupplierForecast.QuantityForecast >= _MOQ)
                                                             {
-                                                                wallet, _SupplierForecast.QuantityForecast,
-                                                                _CustomerOrder.QuantityOrderKg * _rate
-                                                            }.Min();
+                                                                //if (sumVE <= 0) { continue; }
+                                                                // Honestly, this should never be hit
+                                                                // Jk I changed stuff. This should ALWAYS be hit
 
-                                                            //if (UpperCap > 0)
-                                                            //    _QuantityForecast = Math.Min(Math.Max(_CustomerOrder.QuantityOrderKg * UpperLimit, _MOQ), _QuantityForecast);
-
-                                                            _QuantityForecast = Math.Round(_QuantityForecast, 1);
-                                                            _QuantityForecast = Math.Max(_QuantityForecast, _MOQ);
-
-                                                            #region Unit.
-
-                                                            //if (_CustomerOrder.Unit != "Kg")
-                                                            //{
-                                                            //    var something = coreStructure.dicProductUnit[_Product.ProductCode].ListRegion.Where(x => x.OrderUnitType == _CustomerOrder.Unit).FirstOrDefault();
-                                                            //    if (something != null)
-                                                            //    {
-                                                            //        double _SaleUnitPer = something.SaleUnitPer;
-                                                            //        _QuantityForecast = (_QuantityForecast / _MOQ) * _SaleUnitPer;
-                                                            //    }
-                                                            //}
-
-                                                            #endregion
-
-                                                            #region Defer extra days for Crossing Regions ( North --> South and vice versa. )
-
-                                                            // To coup with merging PO ( Tue Thu Sat to Mon Wed Fri )
-                                                            var _Date = DatePO.AddDays(-dayBefore).Date;
-                                                            if (CrossRegion && _SupplierForecast.CrossRegion &&
-                                                                CustomerRegion == "Miền Bắc" &&
-                                                                SupplierRegion ==
-                                                                "Miền Nam" /*&& _Product.ProductCode.Substring(0, 1) == "K"*/ &&
-                                                                (_Date.DayOfWeek == DayOfWeek.Tuesday ||
-                                                                 _Date.DayOfWeek == DayOfWeek.Thursday ||
-                                                                 _Date.DayOfWeek == DayOfWeek.Saturday))
-                                                                _Date = _Date.AddDays(-1).Date;
-
-                                                            #endregion
-
-                                                            //// To coup with Supply has custom rates, depending on Region.
-                                                            ////var _ProductRate = new ProductRate();
-                                                            //double CrossRegionRate = 1;
-                                                            //if (!YesNoKPI && SupplierRegion == "Miền Nam" && coreStructure.dicProductRate.TryGetValue(_Product.ProductCode, out var _ProductRate))
-                                                            //{
-                                                            //    switch (CustomerRegion)
-                                                            //    {
-                                                            //        case "Miền Bắc": CrossRegionRate = _ProductRate.ToNorth; break;
-                                                            //        case "Miền Nam": CrossRegionRate = _ProductRate.ToSouth; break;
-                                                            //        default: break;
-                                                            //    }
-                                                            //}
-
-                                                            //_QuantityForecast *= 1;
-
-                                                            // Another Nth attempt at dealing with idk why > 100% for VM+ VinEco
-                                                            //if (coreStructure.dicCustomer[_CustomerOrder.CustomerId].CustomerType == "VM+ VinEco")
-                                                            //    _QuantityForecast = Math.Min(_QuantityForecast, _CustomerOrder.QuantityOrderKg);
-
-                                                            var newId = Guid.NewGuid();
-                                                            _SupplierForecastCoord =
-                                                                new Dictionary<SupplierForecast, DateTime>
+                                                                //double _QuantityForecast = Math.Min(wallet, _SupplierForecast.QuantityForecast, _CustomerOrder.QuantityOrderKg * _rate);
+                                                                var _QuantityForecast = new[]
                                                                 {
+                                                                    wallet, _SupplierForecast.QuantityForecast,
+                                                                    _CustomerOrder.QuantityOrderKg * _rate
+                                                                }.Min();
+
+                                                                //if (UpperCap > 0)
+                                                                //    _QuantityForecast = Math.Min(Math.Max(_CustomerOrder.QuantityOrderKg * UpperLimit, _MOQ), _QuantityForecast);
+
+                                                                if (flagFullOrder)
+                                                                    _QuantityForecast =
+                                                                        _CustomerOrder.QuantityOrderKg * _rate;
+                                                                else
+                                                                {
+                                                                    _QuantityForecast =
+                                                                        Math.Round(_QuantityForecast, 1);
+                                                                    _QuantityForecast = Math.Max(_QuantityForecast,
+                                                                        _MOQ);
+                                                                }
+
+                                                                #region Unit.
+
+                                                                //if (_CustomerOrder.Unit != "Kg")
+                                                                //{
+                                                                //    var something = coreStructure.dicProductUnit[_Product.ProductCode].ListRegion.Where(x => x.OrderUnitType == _CustomerOrder.Unit).FirstOrDefault();
+                                                                //    if (something != null)
+                                                                //    {
+                                                                //        double _SaleUnitPer = something.SaleUnitPer;
+                                                                //        _QuantityForecast = (_QuantityForecast / _MOQ) * _SaleUnitPer;
+                                                                //    }
+                                                                //}
+
+                                                                #endregion
+
+                                                                #region Defer extra days for Crossing Regions ( North --> South and vice versa. )
+
+                                                                // To coup with merging PO ( Tue Thu Sat to Mon Wed Fri )
+                                                                var _Date = DatePO.AddDays(-dayBefore).Date;
+                                                                if (CrossRegion && _SupplierForecast.CrossRegion &&
+                                                                    CustomerRegion == "Miền Bắc" &&
+                                                                    SupplierRegion ==
+                                                                    "Miền Nam" /*&& _Product.ProductCode.Substring(0, 1) == "K"*/ &&
+                                                                    (_Date.DayOfWeek == DayOfWeek.Tuesday ||
+                                                                     _Date.DayOfWeek == DayOfWeek.Thursday ||
+                                                                     _Date.DayOfWeek == DayOfWeek.Saturday))
+                                                                    _Date = _Date.AddDays(-1).Date;
+
+                                                                #endregion
+
+                                                                //// To coup with Supply has custom rates, depending on Region.
+                                                                ////var _ProductRate = new ProductRate();
+                                                                //double CrossRegionRate = 1;
+                                                                //if (!YesNoKPI && SupplierRegion == "Miền Nam" && coreStructure.dicProductRate.TryGetValue(_Product.ProductCode, out var _ProductRate))
+                                                                //{
+                                                                //    switch (CustomerRegion)
+                                                                //    {
+                                                                //        case "Miền Bắc": CrossRegionRate = _ProductRate.ToNorth; break;
+                                                                //        case "Miền Nam": CrossRegionRate = _ProductRate.ToSouth; break;
+                                                                //        default: break;
+                                                                //    }
+                                                                //}
+
+                                                                //_QuantityForecast *= 1;
+
+                                                                // Another Nth attempt at dealing with idk why > 100% for VM+ VinEco
+                                                                //if (coreStructure.dicCustomer[_CustomerOrder.CustomerId].CustomerType == "VM+ VinEco")
+                                                                //    _QuantityForecast = Math.Min(_QuantityForecast, _CustomerOrder.QuantityOrderKg);
+
+                                                                var newId = Guid.NewGuid();
+                                                                _SupplierForecastCoord =
+                                                                    new Dictionary<SupplierForecast, DateTime>
+                                                                    {
                                                                     {
                                                                         new SupplierForecast
                                                                         {
@@ -4360,107 +4365,107 @@ namespace ChiaHang
                                                                         },
                                                                         _Date
                                                                     }
-                                                                };
+                                                                    };
 
-                                                            //if (PriorityTarget == "VM+ VinEco" && _CustomerOrder.QuantityOrderKg >= _MOQ && _QuantityForecast > Math.Round(_CustomerOrder.QuantityOrderKg, 1))
-                                                            //{
-                                                            //    byte ReallyDoodReally = 0;
-                                                            //}
+                                                                //if (PriorityTarget == "VM+ VinEco" && _CustomerOrder.QuantityOrderKg >= _MOQ && _QuantityForecast > Math.Round(_CustomerOrder.QuantityOrderKg, 1))
+                                                                //{
+                                                                //    byte ReallyDoodReally = 0;
+                                                                //}
 
-                                                            // KPI cases
-                                                            if (YesNoKPI)
-                                                            {
-                                                                _SupplierForecast.QuantityForecastPlanned -=
+                                                                // KPI cases
+                                                                if (YesNoKPI)
+                                                                {
+                                                                    _SupplierForecast.QuantityForecastPlanned -=
+                                                                        _QuantityForecast;
+                                                                    _SupplierForecast.QuantityForecastContracted -=
+                                                                        _QuantityForecast;
+                                                                }
+                                                                // Minimum cases
+                                                                else if (YesNoContracted)
+                                                                {
+                                                                    _SupplierForecast.QuantityForecastContracted -=
+                                                                        _QuantityForecast;
+                                                                }
+                                                                // Default cases
+                                                                _SupplierForecast.QuantityForecast -= _QuantityForecast;
+                                                                _SupplierForecast.QuantityForecastOriginal -=
                                                                     _QuantityForecast;
-                                                                _SupplierForecast.QuantityForecastContracted -=
-                                                                    _QuantityForecast;
+                                                                if (_SupplierForecast.FullOrder &&
+                                                                    _SupplierForecast.QuantityForecast < _MOQ)
+                                                                    _SupplierForecast.QuantityForecast = _MOQ * 7;
+                                                                // To make sure Full Order Supplier will still go.
+
+                                                                coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] =
+                                                                    _SupplierForecastCoord;
+                                                                coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][
+                                                                    _SupplierForecast] += wallet;
+
+                                                                //coreStructure.dicPO[DatePO][_Product][_CustomerOrder] = false;
+
+                                                                // Roburst way, might optimize Procedures a little bit better.
+                                                                // Remove Customers and Suppliers fulfilled their roles.
+
+                                                                if (_SupplierForecast.QuantityForecast < _MOQ)
+                                                                {
+                                                                    coreStructure.dicFC[DatePO.AddDays(-dayBefore)][
+                                                                        _Product].Remove(_SupplierForecast);
+                                                                    dicSupplierFC.Value.Remove(_SupplierForecast);
+                                                                }
+
+                                                                wallet -= _QuantityForecast;
                                                             }
-                                                            // Minimum cases
-                                                            else if (YesNoContracted)
-                                                            {
-                                                                _SupplierForecast.QuantityForecastContracted -=
-                                                                    _QuantityForecast;
-                                                            }
-                                                            // Default cases
-                                                            _SupplierForecast.QuantityForecast -= _QuantityForecast;
-                                                            _SupplierForecast.QuantityForecastOriginal -=
-                                                                _QuantityForecast;
-                                                            if (_SupplierForecast.FullOrder &&
-                                                                _SupplierForecast.QuantityForecast < _MOQ)
-                                                                _SupplierForecast.QuantityForecast = _MOQ * 7;
-                                                            // To make sure Full Order Supplier will still go.
+                                                            coreStructure.dicPO[DatePO][_Product].Remove(_CustomerOrder);
 
-                                                            coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] =
-                                                                _SupplierForecastCoord;
-                                                            coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][
-                                                                _SupplierForecast] += wallet;
+                                                            if (coreStructure.dicPO[DatePO][_Product].Count == 0)
+                                                                coreStructure.dicPO[DatePO].Remove(_Product);
 
-                                                            //coreStructure.dicPO[DatePO][_Product][_CustomerOrder] = false;
-
-                                                            // Roburst way, might optimize Procedures a little bit better.
-                                                            // Remove Customers and Suppliers fulfilled their roles.
-
-                                                            if (_SupplierForecast.QuantityForecast < _MOQ)
-                                                            {
-                                                                coreStructure.dicFC[DatePO.AddDays(-dayBefore)][
-                                                                    _Product].Remove(_SupplierForecast);
-                                                                dicSupplierFC.Value.Remove(_SupplierForecast);
-                                                            }
-
-                                                            wallet -= _QuantityForecast;
+                                                            if (coreStructure.dicPO[DatePO].Keys.Count == 0)
+                                                                coreStructure.dicPO.Remove(DatePO);
                                                         }
-                                                        coreStructure.dicPO[DatePO][_Product].Remove(_CustomerOrder);
-
-                                                        if (coreStructure.dicPO[DatePO][_Product].Count == 0)
-                                                            coreStructure.dicPO[DatePO].Remove(_Product);
-
-                                                        if (coreStructure.dicPO[DatePO].Keys.Count == 0)
-                                                            coreStructure.dicPO.Remove(DatePO);
-                                                    }
-                                    }
-                                    else
-                                    {
-                                        var ValidSupplier = dicSupplierFC.Value
-                                            .Where(x => x.Key.QuantityForecast > 0)
-                                            .Where(x =>
-                                                coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion ==
-                                                SupplierRegion &&
-                                                coreStructure.dicSupplier[x.Key.SupplierId].SupplierType ==
-                                                SupplierType &&
-                                                (SupplierType != "VinEco"
-                                                    ? x.Key.Availability.Contains(
-                                                        Convert.ToString(
-                                                            (int) DatePO.AddDays(-dayBefore).DayOfWeek + 1))
-                                                    : true) &&
-                                                (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
-                                                (CrossRegion ? x.Key.CrossRegion : true))
-                                            .OrderBy(x => x.Key.QuantityForecast);
-
-                                        var SupplierCount = ValidSupplier.Count();
-
-                                        foreach (var key in ValidSupplier)
+                                        }
+                                        else
                                         {
-                                            var _SupplierForecast = key.Key;
+                                            var ValidSupplier = dicSupplierFC.Value
+                                                .Where(x => x.Key.QuantityForecast > 0)
+                                                .Where(x =>
+                                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion ==
+                                                    SupplierRegion &&
+                                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierType ==
+                                                    SupplierType &&
+                                                    (SupplierType != "VinEco"
+                                                        ? x.Key.Availability.Contains(
+                                                            Convert.ToString(
+                                                                (int)DatePO.AddDays(-dayBefore).DayOfWeek + 1))
+                                                        : true) &&
+                                                    (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
+                                                    (CrossRegion ? x.Key.CrossRegion : true))
+                                                .OrderBy(x => x.Key.QuantityForecast);
 
-                                            var _QuantityForecast =
-                                                Math.Min(_CustomerOrder.QuantityOrderKg / SupplierCount * rate,
-                                                    _SupplierForecast.QuantityForecast);
+                                            var SupplierCount = ValidSupplier.Count();
 
-                                            _QuantityForecast = Math.Round(_QuantityForecast, 1);
+                                            foreach (var key in ValidSupplier)
+                                            {
+                                                var _SupplierForecast = key.Key;
 
-                                            var newId = Guid.NewGuid();
+                                                var _QuantityForecast =
+                                                    Math.Min(_CustomerOrder.QuantityOrderKg / SupplierCount * rate,
+                                                        _SupplierForecast.QuantityForecast);
 
-                                            var _Date = DatePO.AddDays(-dayBefore).Date;
-                                            if (CrossRegion && _SupplierForecast.CrossRegion &&
-                                                CustomerRegion == "Miền Bắc" &&
-                                                SupplierRegion ==
-                                                "Miền Nam" /*&& _Product.ProductCode.Substring(0, 1) == "K"*/ &&
-                                                (_Date.DayOfWeek == DayOfWeek.Tuesday ||
-                                                 _Date.DayOfWeek == DayOfWeek.Thursday ||
-                                                 _Date.DayOfWeek == DayOfWeek.Saturday))
-                                                _Date = _Date.AddDays(-1).Date;
+                                                _QuantityForecast = Math.Round(_QuantityForecast, 1);
 
-                                            var _SupplierForecastCoord = new Dictionary<SupplierForecast, DateTime>
+                                                var newId = Guid.NewGuid();
+
+                                                var _Date = DatePO.AddDays(-dayBefore).Date;
+                                                if (CrossRegion && _SupplierForecast.CrossRegion &&
+                                                    CustomerRegion == "Miền Bắc" &&
+                                                    SupplierRegion ==
+                                                    "Miền Nam" /*&& _Product.ProductCode.Substring(0, 1) == "K"*/ &&
+                                                    (_Date.DayOfWeek == DayOfWeek.Tuesday ||
+                                                     _Date.DayOfWeek == DayOfWeek.Thursday ||
+                                                     _Date.DayOfWeek == DayOfWeek.Saturday))
+                                                    _Date = _Date.AddDays(-1).Date;
+
+                                                var _SupplierForecastCoord = new Dictionary<SupplierForecast, DateTime>
                                             {
                                                 {
                                                     new SupplierForecast
@@ -4484,57 +4489,57 @@ namespace ChiaHang
                                                 }
                                             };
 
-                                            // KPI cases
-                                            if (YesNoKPI)
-                                            {
-                                                _SupplierForecast.QuantityForecastPlanned -= _QuantityForecast;
-                                                _SupplierForecast.QuantityForecastContracted -= _QuantityForecast;
+                                                // KPI cases
+                                                if (YesNoKPI)
+                                                {
+                                                    _SupplierForecast.QuantityForecastPlanned -= _QuantityForecast;
+                                                    _SupplierForecast.QuantityForecastContracted -= _QuantityForecast;
+                                                }
+                                                // Minimum cases
+                                                if (YesNoContracted)
+                                                    _SupplierForecast.QuantityForecastContracted -= _QuantityForecast;
+                                                // Default cases
+                                                _SupplierForecast.QuantityForecast -= _QuantityForecast;
+                                                _SupplierForecast.QuantityForecastOriginal -= _QuantityForecast;
+                                                if (_SupplierForecast.FullOrder && _SupplierForecast.QuantityForecast <= 0)
+                                                    _SupplierForecast.QuantityForecast = _MOQ * 7;
+                                                // To make sure Full Order Supplier will still go.
+
+                                                var CustomerOrder = new CustomerOrder
+                                                {
+                                                    Company = _CustomerOrder.Company,
+                                                    CustomerId = _CustomerOrder.CustomerId,
+                                                    _id = Guid.NewGuid(),
+                                                    CustomerOrderId = Guid.NewGuid(),
+                                                    DesiredRegion = _CustomerOrder.DesiredRegion,
+                                                    DesiredSource = _CustomerOrder.DesiredSource,
+                                                    QuantityOrder = _QuantityForecast,
+                                                    QuantityOrderKg = _QuantityForecast,
+                                                    Unit = _CustomerOrder.Unit
+                                                };
+
+                                                _CustomerOrder.QuantityOrderKg -= _QuantityForecast;
+
+                                                coreStructure.dicPO[DatePO][_Product].Add(CustomerOrder, false);
+
+                                                coreStructure.dicCoord[DatePO][_Product]
+                                                    .Add(CustomerOrder, _SupplierForecastCoord);
+
+                                                coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][
+                                                    _SupplierForecast] += _QuantityForecast;
                                             }
-                                            // Minimum cases
-                                            if (YesNoContracted)
-                                                _SupplierForecast.QuantityForecastContracted -= _QuantityForecast;
-                                            // Default cases
-                                            _SupplierForecast.QuantityForecast -= _QuantityForecast;
-                                            _SupplierForecast.QuantityForecastOriginal -= _QuantityForecast;
-                                            if (_SupplierForecast.FullOrder && _SupplierForecast.QuantityForecast <= 0)
-                                                _SupplierForecast.QuantityForecast = _MOQ * 7;
-                                            // To make sure Full Order Supplier will still go.
+                                            //coreStructure.dicPO[DatePO][_Product].Remove(_CustomerOrder);
 
-                                            var CustomerOrder = new CustomerOrder
-                                            {
-                                                Company = _CustomerOrder.Company,
-                                                CustomerId = _CustomerOrder.CustomerId,
-                                                _id = Guid.NewGuid(),
-                                                CustomerOrderId = Guid.NewGuid(),
-                                                DesiredRegion = _CustomerOrder.DesiredRegion,
-                                                DesiredSource = _CustomerOrder.DesiredSource,
-                                                QuantityOrder = _QuantityForecast,
-                                                QuantityOrderKg = _QuantityForecast,
-                                                Unit = _CustomerOrder.Unit
-                                            };
+                                            if (coreStructure.dicPO[DatePO][_Product].Count == 0)
+                                                coreStructure.dicPO[DatePO].Remove(_Product);
 
-                                            _CustomerOrder.QuantityOrderKg -= _QuantityForecast;
-
-                                            coreStructure.dicPO[DatePO][_Product].Add(CustomerOrder, false);
-
-                                            coreStructure.dicCoord[DatePO][_Product]
-                                                .Add(CustomerOrder, _SupplierForecastCoord);
-
-                                            coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][
-                                                _SupplierForecast] += _QuantityForecast;
+                                            if (coreStructure.dicPO[DatePO].Keys.Count == 0)
+                                                coreStructure.dicPO.Remove(DatePO);
                                         }
-                                        //coreStructure.dicPO[DatePO][_Product].Remove(_CustomerOrder);
-
-                                        if (coreStructure.dicPO[DatePO][_Product].Count == 0)
-                                            coreStructure.dicPO[DatePO].Remove(_Product);
-
-                                        if (coreStructure.dicPO[DatePO].Keys.Count == 0)
-                                            coreStructure.dicPO.Remove(DatePO);
-                                    }
+                                }
                             }
                         }
                     }
-                }
                 //}
                 stopwatch.Stop();
                 //WriteToRichTextBoxOutput(String.Format(" UpperLimit = {1} - Done in {0}s!", Math.Round(stopwatch.Elapsed.TotalSeconds, 2), UpperLimit));
@@ -4566,147 +4571,190 @@ namespace ChiaHang
                 //Console.Write("{0} => {1}, {2}{3}", String.Concat(SupplierRegion.Split(' ').Select(x => x.First())), String.Concat(CustomerRegion.Split(' ').Select(x => x.First().ToString().ToUpper())), SupplierType, (PriorityTarget != "" ? " " + PriorityTarget : ""));
                 foreach (var DatePO in coreStructure.dicPO.Keys.OrderByDescending(x => x.Date).Reverse())
                     // Product Layer.
-                foreach (var _Product in coreStructure.dicPO[DatePO].Keys.OrderByDescending(x => x.ProductCode)
-                    .Reverse())
-                {
-                    double _MOQ = 0;
-                    // In case they are ordering and checking performance through an unit that's NOT FUCKING KILOGRAM!
-                    //if (YesNoByUnit)
-                    //{
-                    //    // Cheapest way to calculate Kg per Unit.
-                    //    // Man I'm so smart.
-                    //    _MOQ = _CustomerOrder.QuantityOrderKg / _CustomerOrder.QuantityOrder;
-                    //}
-                    // ... Otherwise, we're cool boys.
-                    //else
-                    //{
+                    foreach (var _Product in coreStructure.dicPO[DatePO].Keys.OrderByDescending(x => x.ProductCode)
+                        .Reverse())
+                    {
+                        double _MOQ = 0;
+                        // In case they are ordering and checking performance through an unit that's NOT FUCKING KILOGRAM!
+                        //if (YesNoByUnit)
+                        //{
+                        //    // Cheapest way to calculate Kg per Unit.
+                        //    // Man I'm so smart.
+                        //    _MOQ = _CustomerOrder.QuantityOrderKg / _CustomerOrder.QuantityOrder;
+                        //}
+                        // ... Otherwise, we're cool boys.
+                        //else
+                        //{
 
-                    _MOQ = coreStructure.dicMinimum[_Product.ProductCode.Substring(0, 1)];
-                    // Special cases for Lemon. Apparently it's not Fruit but Spices :\
-                    if (_Product.ProductCode.Substring(0, 1) == "K" &&
-                        (_Product.ProductCode == "K01901" || _Product.ProductCode == "K02201"))
-                        _MOQ = 0.3;
+                        _MOQ = coreStructure.dicMinimum[_Product.ProductCode.Substring(0, 1)];
+                        // Special cases for Lemon. Apparently it's not Fruit but Spices :\
+                        if (_Product.ProductCode.Substring(0, 1) == "K" &&
+                            (_Product.ProductCode == "K01901" || _Product.ProductCode == "K02201"))
+                            _MOQ = 0.3;
 
-                    //}
+                        //}
 
-                    restartThis:
+                        restartThis:
 
-                    /// <! For Debuging Purposes Only !>
-                    // Only uncomment in very specific debugging situation.
-                    //if (_Product.ProductCode == "A04801" && DatePO.Day == 26 && CustomerRegion == "Miền Nam" && SupplierRegion == "Miền Nam" && SupplierType == "VCM")
-                    //{
-                    //    string WhatAmIEvenDoing = "I have no freaking idea.";
-                    //}
+                        /// <! For Debuging Purposes Only !>
+                        // Only uncomment in very specific debugging situation.
+                        //if (_Product.ProductCode == "A04801" && DatePO.Day == 26 && CustomerRegion == "Miền Nam" && SupplierRegion == "Miền Nam" && SupplierType == "VCM")
+                        //{
+                        //    string WhatAmIEvenDoing = "I have no freaking idea.";
+                        //}
 
-                    // Skip if product is not in the List VinEco supplies.
-                    if (SupplierType != "VinEco" && _Product.ProductCode.Substring(0, 1) != "K" &&
-                        (PriorityTarget == "VM" || PriorityTarget == "VM+"))
-                        if (!_Product.ProductNote.Contains(CustomerRegion == "Miền Bắc" ? "North" : "South"))
-                            continue;
+                        // Skip if product is not in the List VinEco supplies.
+                        if (SupplierType != "VinEco" && _Product.ProductCode.Substring(0, 1) != "K" &&
+                            (PriorityTarget == "VM" || PriorityTarget == "VM+"))
+                            if (!_Product.ProductNote.Contains(CustomerRegion == "Miền Bắc" ? "North" : "South"))
+                                continue;
 
-                    // Dealing with cases of some Products that will not go to either region, from Lâm Đồng
-                    var _ProductCrossRegion = new ProductCrossRegion();
-                    if (coreStructure.dicProductCrossRegion.TryGetValue(_Product.ProductId, out _ProductCrossRegion) &&
-                        SupplierRegion == "Lâm Đồng")
-                        switch (CustomerRegion)
-                        {
-                            case "Miền Bắc":
-                                if (!_ProductCrossRegion.ToNorth) continue;
-                                break;
-                            case "Miền Nam":
-                                if (!_ProductCrossRegion.ToSouth) continue;
-                                break;
-                            default: break;
-                        }
+                        // Dealing with cases of some Products that will not go to either region, from Lâm Đồng
+                        var _ProductCrossRegion = new ProductCrossRegion();
+                        if (coreStructure.dicProductCrossRegion.TryGetValue(_Product.ProductId, out _ProductCrossRegion) &&
+                            SupplierRegion == "Lâm Đồng")
+                            switch (CustomerRegion)
+                            {
+                                case "Miền Bắc":
+                                    if (!_ProductCrossRegion.ToNorth) continue;
+                                    break;
+                                case "Miền Nam":
+                                    if (!_ProductCrossRegion.ToSouth) continue;
+                                    break;
+                                default: break;
+                            }
 
-                    #region Demand from Chosen Customers.
+                        #region Demand from Chosen Customers.
 
-                    // Total Order.
-                    var sumVCM = coreStructure.dicPO[DatePO][_Product]
-                        .Where(x =>
-                            coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion == CustomerRegion &&
-                            x.Value &&
-                            (PriorityTarget != ""
-                                ? coreStructure.dicCustomer[x.Key.CustomerId].CustomerType == PriorityTarget
-                                : true))
-                        .Sum(x => x.Key.QuantityOrderKg); // Sum of Demand.
-
-                    var sumVM = PriorityTarget.Contains("VM+")
-                        ? coreStructure.dicPO[DatePO][_Product]
+                        // Total Order.
+                        var sumVCM = coreStructure.dicPO[DatePO][_Product]
                             .Where(x =>
                                 coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion == CustomerRegion &&
-                                x.Value && coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM") &&
-                                !coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM+"))
-                            .Sum(x => x.Key.QuantityOrderKg)
-                        : 0; // Sum of Demand.
+                                x.Value &&
+                                (PriorityTarget != ""
+                                    ? coreStructure.dicCustomer[x.Key.CustomerId].CustomerType == PriorityTarget
+                                    : true))
+                            .Sum(x => x.Key.QuantityOrderKg); // Sum of Demand.
 
-                    var sumVcmMN = sumVCM + sumVM;
-
-                    if (SupplierRegion == "Lâm Đồng")
-                    {
-                        var _DatePO = CustomerRegion == "Miền Nam" ? DatePO.AddDays(2) : DatePO.AddDays(-2);
-                        if (coreStructure.dicPO.ContainsKey(_DatePO) &&
-                            coreStructure.dicPO[_DatePO].ContainsKey(_Product))
-                        {
-                            var _CustomerRegion = CustomerRegion == "Miền Nam" ? "Miền Bắc" : "Miền Nam";
-                            sumVCM += coreStructure.dicPO[_DatePO][_Product]
+                        var sumVM = PriorityTarget.Contains("VM+")
+                            ? coreStructure.dicPO[DatePO][_Product]
                                 .Where(x =>
-                                    coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion == _CustomerRegion &&
-                                    x.Value &&
-                                    (PriorityTarget != ""
-                                        ? coreStructure.dicCustomer[x.Key.CustomerId].CustomerType == PriorityTarget
-                                        : true))
-                                .Sum(x => x.Key.QuantityOrderKg);
+                                    coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion == CustomerRegion &&
+                                    x.Value && coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM") &&
+                                    !coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM+"))
+                                .Sum(x => x.Key.QuantityOrderKg)
+                            : 0; // Sum of Demand.
 
-                            sumVM += PriorityTarget.Contains("VM+")
-                                ? coreStructure.dicPO[_DatePO][_Product]
-                                    .Where(x =>
-                                        coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion ==
-                                        _CustomerRegion &&
-                                        x.Value &&
-                                        coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM") &&
-                                        !coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM+"))
-                                    .Sum(x => x.Key.QuantityOrderKg)
-                                : 0; // Sum of Demand.
-                        }
-                    }
+                        var sumVcmMN = sumVCM + sumVM;
 
-                    #endregion
-
-                    // To deal with Minimum Order Quantity.
-                    double wallet = 0;
-
-                    // Grabbing Suppliers by Harvest days.
-                    // One for all, one for Lâm Đồng coz Suppliers from there supply both regions.
-
-                    var _dicProductFC = coreStructure.dicFC.Where(x => x.Key.Date == DatePO.AddDays(-dayBefore))
-                        .FirstOrDefault();
-                    var _dicProductFcLd = coreStructure.dicFC.Where(x => x.Key.Date == DatePO.AddDays(-dayLdBefore))
-                        .FirstOrDefault();
-
-                    if (sumVCM != 0 && _dicProductFC.Value != null)
-                    {
-                        double sumThuMuaLd = 0;
-                        double sumFarmLd = 0;
-
-                        #region Supply from Lâm Đồng
-
-                        if (SupplierRegion != "Lâm Đồng" && _dicProductFcLd.Value != null)
+                        if (SupplierRegion == "Lâm Đồng")
                         {
-                            // Check if Inventory has stock in other places.
-                            // If no, equally distributed stuff.
-                            // If yes, hah hah hah no.
-                            var dicSupplierLdFC = _dicProductFcLd.Value
-                                .Where(x => x.Key.ProductCode == _Product.ProductCode).FirstOrDefault();
-                            if (dicSupplierLdFC.Value != null)
+                            var _DatePO = CustomerRegion == "Miền Nam" ? DatePO.AddDays(2) : DatePO.AddDays(-2);
+                            if (coreStructure.dicPO.ContainsKey(_DatePO) &&
+                                coreStructure.dicPO[_DatePO].ContainsKey(_Product))
                             {
-                                // Check Lâm Đồng
-                                // Please NEVER FullOrder == true.
-                                //var _SupplierThuMuaLd = 
-
-                                var _dicSupplierLdFC = dicSupplierLdFC.Value
+                                var _CustomerRegion = CustomerRegion == "Miền Nam" ? "Miền Bắc" : "Miền Nam";
+                                sumVCM += coreStructure.dicPO[_DatePO][_Product]
                                     .Where(x =>
-                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == "Lâm Đồng" &&
+                                        coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion == _CustomerRegion &&
+                                        x.Value &&
+                                        (PriorityTarget != ""
+                                            ? coreStructure.dicCustomer[x.Key.CustomerId].CustomerType == PriorityTarget
+                                            : true))
+                                    .Sum(x => x.Key.QuantityOrderKg);
+
+                                sumVM += PriorityTarget.Contains("VM+")
+                                    ? coreStructure.dicPO[_DatePO][_Product]
+                                        .Where(x =>
+                                            coreStructure.dicCustomer[x.Key.CustomerId].CustomerBigRegion ==
+                                            _CustomerRegion &&
+                                            x.Value &&
+                                            coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM") &&
+                                            !coreStructure.dicCustomer[x.Key.CustomerId].CustomerType.Contains("VM+"))
+                                        .Sum(x => x.Key.QuantityOrderKg)
+                                    : 0; // Sum of Demand.
+                            }
+                        }
+
+                        #endregion
+
+                        // To deal with Minimum Order Quantity.
+                        double wallet = 0;
+
+                        // Grabbing Suppliers by Harvest days.
+                        // One for all, one for Lâm Đồng coz Suppliers from there supply both regions.
+
+                        var _dicProductFC = coreStructure.dicFC.Where(x => x.Key.Date == DatePO.AddDays(-dayBefore))
+                            .FirstOrDefault();
+                        var _dicProductFcLd = coreStructure.dicFC.Where(x => x.Key.Date == DatePO.AddDays(-dayLdBefore))
+                            .FirstOrDefault();
+
+                        if (sumVCM != 0 && _dicProductFC.Value != null)
+                        {
+                            double sumThuMuaLd = 0;
+                            double sumFarmLd = 0;
+
+                            #region Supply from Lâm Đồng
+
+                            if (SupplierRegion != "Lâm Đồng" && _dicProductFcLd.Value != null)
+                            {
+                                // Check if Inventory has stock in other places.
+                                // If no, equally distributed stuff.
+                                // If yes, hah hah hah no.
+                                var dicSupplierLdFC = _dicProductFcLd.Value
+                                    .Where(x => x.Key.ProductCode == _Product.ProductCode).FirstOrDefault();
+                                if (dicSupplierLdFC.Value != null)
+                                {
+                                    // Check Lâm Đồng
+                                    // Please NEVER FullOrder == true.
+                                    //var _SupplierThuMuaLd = 
+
+                                    var _dicSupplierLdFC = dicSupplierLdFC.Value
+                                        .Where(x =>
+                                            coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == "Lâm Đồng" &&
+                                            (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
+                                            (YesNoKPI
+                                                ? x.Key.QuantityForecastPlanned
+                                                : YesNoContracted
+                                                    ? x.Key.QuantityForecastContracted
+                                                    : x.Key.QuantityForecast) > 0);
+
+                                    // Normal case
+                                    sumFarmLd = _dicSupplierLdFC
+                                        .Where(x =>
+                                            coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == "VinEco")
+                                        .Sum(x => x.Key.QuantityForecast);
+
+                                    sumThuMuaLd = _dicSupplierLdFC
+                                        .Where(x =>
+                                            coreStructure.dicSupplier[x.Key.SupplierId].SupplierType != "VinEco" &&
+                                            x.Key.Availability.Contains(
+                                                Convert.ToString((int)DatePO.AddDays(-dayLdBefore).DayOfWeek + 1)))
+                                        .Sum(x => x.Key.QuantityForecast);
+                                }
+                            }
+
+                            #endregion
+
+                            var dicSupplierFC = _dicProductFC.Value.Where(x => x.Key.ProductCode == _Product.ProductCode)
+                                .FirstOrDefault();
+                            if (dicSupplierFC.Value != null)
+                            {
+                                #region Total Supply.
+
+                                var _resultSupplier = dicSupplierFC.Value
+                                    .Where(x =>
+                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == "VinEco" &&
+                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == SupplierType &&
+                                        (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
+                                        (SupplierType != "VinEco"
+                                            ? x.Key.Availability.Contains(
+                                                Convert.ToString((int)DatePO.AddDays(-dayBefore).DayOfWeek + 1))
+                                            : true));
+
+                                var _dicSupplierFC = dicSupplierFC.Value
+                                    .Where(x =>
+                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == SupplierRegion &&
                                         (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
                                         (YesNoKPI
                                             ? x.Key.QuantityForecastPlanned
@@ -4714,455 +4762,412 @@ namespace ChiaHang
                                                 ? x.Key.QuantityForecastContracted
                                                 : x.Key.QuantityForecast) > 0);
 
-                                // Normal case
-                                sumFarmLd = _dicSupplierLdFC
+                                var sumFarm = _dicSupplierFC
                                     .Where(x =>
                                         coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == "VinEco")
                                     .Sum(x => x.Key.QuantityForecast);
 
-                                sumThuMuaLd = _dicSupplierLdFC
+                                var sumThuMua = _dicSupplierFC
                                     .Where(x =>
                                         coreStructure.dicSupplier[x.Key.SupplierId].SupplierType != "VinEco" &&
                                         x.Key.Availability.Contains(
-                                            Convert.ToString((int) DatePO.AddDays(-dayLdBefore).DayOfWeek + 1)))
+                                            Convert.ToString((int)DatePO.AddDays(-dayBefore).DayOfWeek + 1)))
                                     .Sum(x => x.Key.QuantityForecast);
-                            }
-                        }
 
-                        #endregion
+                                //_resultSupplier
+                                //    .Sum(x => YesNoKPI ? x.Key.QuantityForecastPlanned : YesNoContracted ? x.Key.QuantityForecastContracted : x.Key.QuantityForecast);
 
-                        var dicSupplierFC = _dicProductFC.Value.Where(x => x.Key.ProductCode == _Product.ProductCode)
-                            .FirstOrDefault();
-                        if (dicSupplierFC.Value != null)
-                        {
-                            #region Total Supply.
+                                var flagFullOrder = false;
 
-                            var _resultSupplier = dicSupplierFC.Value
-                                .Where(x =>
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == "VinEco" &&
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == SupplierType &&
-                                    (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
-                                    (SupplierType != "VinEco"
-                                        ? x.Key.Availability.Contains(
-                                            Convert.ToString((int) DatePO.AddDays(-dayBefore).DayOfWeek + 1))
-                                        : true));
+                                var sumVE = sumFarm + sumThuMua;
 
-                            var _dicSupplierFC = dicSupplierFC.Value
-                                .Where(x =>
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion == SupplierRegion &&
-                                    (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
-                                    (YesNoKPI
-                                        ? x.Key.QuantityForecastPlanned
-                                        : YesNoContracted
-                                            ? x.Key.QuantityForecastContracted
-                                            : x.Key.QuantityForecast) > 0);
+                                var _DatePO = SupplierRegion == "Miền Bắc"
+                                    ? DatePO.AddDays(-2).Date
+                                    : DatePO.AddDays(2).Date;
+                                if (CustomerRegion == "Miền Nam" && coreStructure.dicPO.ContainsKey(_DatePO) &&
+                                    coreStructure.dicPO[_DatePO].ContainsKey(_Product))
+                                    sumVE += Math.Max(sumFarmLd + sumThuMuaLd - coreStructure.dicPO[_DatePO][_Product]
+                                                          .Where(x =>
+                                                              coreStructure.dicCustomer[x.Key.CustomerId]
+                                                                  .CustomerBigRegion ==
+                                                              (CustomerRegion == "Miền Bắc" ? "Miền Nam" : "Miền Bắc") &&
+                                                              x.Value)
+                                                          .Sum(x => x.Key.QuantityOrderKg), 0);
+                                else
+                                    sumVE += sumFarmLd + sumThuMuaLd;
 
-                            var sumFarm = _dicSupplierFC
-                                .Where(x =>
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierType == "VinEco")
-                                .Sum(x => x.Key.QuantityForecast);
-
-                            var sumThuMua = _dicSupplierFC
-                                .Where(x =>
-                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierType != "VinEco" &&
-                                    x.Key.Availability.Contains(
-                                        Convert.ToString((int) DatePO.AddDays(-dayBefore).DayOfWeek + 1)))
-                                .Sum(x => x.Key.QuantityForecast);
-
-                            //_resultSupplier
-                            //    .Sum(x => YesNoKPI ? x.Key.QuantityForecastPlanned : YesNoContracted ? x.Key.QuantityForecastContracted : x.Key.QuantityForecast);
-
-                            var flagFullOrder = false;
-
-                            var sumVE = sumFarm + sumThuMua;
-
-                            var _DatePO = SupplierRegion == "Miền Bắc"
-                                ? DatePO.AddDays(-2).Date
-                                : DatePO.AddDays(2).Date;
-                            if (CustomerRegion == "Miền Nam" && coreStructure.dicPO.ContainsKey(_DatePO) &&
-                                coreStructure.dicPO[_DatePO].ContainsKey(_Product))
-                                sumVE += Math.Max(sumFarmLd + sumThuMuaLd - coreStructure.dicPO[_DatePO][_Product]
-                                                      .Where(x =>
-                                                          coreStructure.dicCustomer[x.Key.CustomerId]
-                                                              .CustomerBigRegion ==
-                                                          (CustomerRegion == "Miền Bắc" ? "Miền Nam" : "Miền Bắc") &&
-                                                          x.Value)
-                                                      .Sum(x => x.Key.QuantityOrderKg), 0);
-                            else
-                                sumVE += sumFarmLd + sumThuMuaLd;
-
-                            if (_resultSupplier.Where(x => YesNoKPI || YesNoContracted ? false : x.Key.FullOrder)
-                                    .FirstOrDefault().Key != null)
-                                flagFullOrder = true;
-                            //else
-                            //{
-                            //sumVE = _resultSupplier
-                            //    .Sum(x => YesNoKPI ? x.Key.QuantityForecastPlanned : YesNoContracted ? x.Key.QuantityForecastContracted : x.Key.QuantityForecast);  // Sum of Supply
-                            //sumVE = sumFarm + sumThuMua + sumFarmLd + sumThuMuaLd;
-                            //}
-
-                            #endregion
-
-                            if (sumVE > 0)
-                            {
-                                #region Rate.
-
-                                // Hack - Freaking need to dissect this part.
-                                // Todo - Further Optimization.
-
-                                // For fuck sake, this is the hardest to code part.
-                                // Also very important. Too important.
-
-                                // Rate = Supply / Demand --> Deli = Demand * Rate.
-                                var rate = sumVE / (sumVCM + sumVM);
-
-                                // If Screw-the-upper-limit flag is up.
-                                if (flagFullOrder)
-                                    rate = UpperCap;
-                                // If it's VinCommerce's Supplier, always 1.
-                                else if (rate < 1 && SupplierType == "VCM" && sumVE > 0)
-                                    rate = UpperCap;
-                                // Otherwise, in case of an UpperLimit, obey it
-                                else if (!flagFullOrder)
-                                    if (rate < 1)
-                                    {
-                                        rate = Math.Max(sumVE / sumVCM, 1);
-                                        rate = SupplierRegion != "Lâm Đồng" &&
-                                               (YesNoKPI || sumFarm > 0 || sumFarmLd > 0 || sumThuMua > 0 ||
-                                                sumThuMuaLd > 0)
-                                            ? Math.Max(rate, 1)
-                                            : rate;
-                                        //if (SupplierRegion == "Lâm Đồng" && rate < 1) { rate = sumVE / sumVcmMN; }
-                                    }
-                                    else if (rate > 1)
-                                    {
-                                        //if (sumVcmMN > sumVCM)
-                                        //{
-                                        //    rate = 1;
-                                        //}
-                                        /*else */
-                                        //if ((sumFarm + sumFarmLd + sumThuMua + sumThuMuaLd) / (sumVCM + sumVM) > 1)
-                                        //{
-                                        rate = (sumFarm + sumFarmLd + sumThuMua + sumThuMuaLd) / (sumVCM + sumVM);
-                                        rate = SupplierRegion != "Lâm Đồng" &&
-                                               (YesNoKPI || sumFarm > 0 || sumFarmLd > 0 || sumThuMua > 0 ||
-                                                sumThuMuaLd > 0)
-                                            ? Math.Max(rate, 1)
-                                            : rate;
-                                        if (rate < 1 && SupplierType == "VCM" && sumVE > 0)
-                                            rate = UpperCap;
-                                        //}
-                                    }
-                                rate = UpperLimit > 0 ? Math.Min(rate, UpperLimit) : rate;
+                                if (_resultSupplier.Where(x => YesNoKPI || YesNoContracted ? false : x.Key.FullOrder)
+                                        .FirstOrDefault().Key != null)
+                                    flagFullOrder = true;
+                                //else
+                                //{
+                                //sumVE = _resultSupplier
+                                //    .Sum(x => YesNoKPI ? x.Key.QuantityForecastPlanned : YesNoContracted ? x.Key.QuantityForecastContracted : x.Key.QuantityForecast);  // Sum of Supply
+                                //sumVE = sumFarm + sumThuMua + sumFarmLd + sumThuMuaLd;
+                                //}
 
                                 #endregion
 
-                                // Only the bravest would tread deeper.
-                                // ... I was once young, brave and foolish ...
-
-                                // Optimization - Filtering Customer Orders that has been dealt with.
-                                //var ListCustomerOrder = coreStructure.dicPO[DatePO][_Product].Where(x => x.Value == true).ToDictionary(x => x.Key);
-                                var ValidCustomerList = coreStructure.dicPO[DatePO][_Product].Where(x => x.Value)
-                                    .ToDictionary(x => x.Key).Keys
-                                    .Where(x =>
-                                        x.QuantityOrderKg >= 0.1 &&
-                                        coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == CustomerRegion &&
-                                        (PriorityTarget != ""
-                                            ? coreStructure.dicCustomer[x.CustomerId].CustomerType == PriorityTarget
-                                            : true) &&
-                                        (x.DesiredRegion == null ? true : x.DesiredRegion == SupplierRegion) &&
-                                        (x.DesiredSource == null ? true : x.DesiredSource == SupplierType))
-                                    .OrderByDescending(x => coreStructure.dicCustomer[x.CustomerId].CustomerCode)
-                                    //.Reverse()
-                                    .ToList();
-
-                                do
+                                if (sumVE > 0)
                                 {
-                                    #region Qualified Suppliers.
+                                    #region Rate.
 
-                                    SupplierForecast _SupplierForecast = null;
+                                    // Hack - Freaking need to dissect this part.
+                                    // Todo - Further Optimization.
 
-                                    var _dicSupplierFC_inner = dicSupplierFC.Value
-                                        .Where(x => x.Key.QuantityForecast >= _MOQ)
-                                        .Where(x => coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion ==
-                                                    SupplierRegion &&
-                                                    coreStructure.dicSupplier[x.Key.SupplierId].SupplierType ==
-                                                    SupplierType &&
-                                                    (SupplierType != "VinEco"
-                                                        ? x.Key.Availability.Contains(
-                                                            Convert.ToString(
-                                                                (int) DatePO.AddDays(-dayBefore).DayOfWeek + 1))
-                                                        : true) &&
-                                                    (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
-                                                    (CrossRegion ? x.Key.CrossRegion : true))
-                                        .OrderBy(x => x.Key.Level)
-                                        .ThenByDescending(x => x.Key.FullOrder)
-                                        .ThenBy(x => coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][x.Key])
-                                        .ThenByDescending(x => x.Key.QuantityForecast)
-                                        .ThenByDescending(x => x.Key.LabelVinEco).ToDictionary(x => x.Key);
+                                    // For fuck sake, this is the hardest to code part.
+                                    // Also very important. Too important.
 
-                                    var result = _dicSupplierFC_inner.FirstOrDefault();
-                                    if (result.Key == null)
-                                        break;
+                                    // Rate = Supply / Demand --> Deli = Demand * Rate.
+                                    var rate = sumVE / (sumVCM + sumVM);
 
-                                    var _CustomerOrder = ValidCustomerList
-                                        .Where(x => x.QuantityOrderKg * rate <= result.Key.QuantityForecast)
-                                        .FirstOrDefault();
-
-                                    if (_CustomerOrder == null)
-                                        _CustomerOrder = ValidCustomerList.OrderBy(x => x.QuantityOrderKg)
-                                            .FirstOrDefault();
-
-                                    if (_CustomerOrder == null)
-                                        break;
-
-                                    // Coz for fuck sake, it can return null
-
-                                    var totalSupplier = _dicSupplierFC_inner.Count();
-                                    _SupplierForecast = result.Key;
+                                    // If Screw-the-upper-limit flag is up.
+                                    if (flagFullOrder)
+                                        rate = UpperCap;
+                                    // If it's VinCommerce's Supplier, always 1.
+                                    else if (rate < 1 && SupplierType == "VCM" && sumVE > 0)
+                                        rate = UpperCap;
+                                    // Otherwise, in case of an UpperLimit, obey it
+                                    else if (!flagFullOrder)
+                                        if (rate < 1)
+                                        {
+                                            rate = Math.Max(sumVE / sumVCM, 1);
+                                            rate = SupplierRegion != "Lâm Đồng" &&
+                                                   (YesNoKPI || sumFarm > 0 || sumFarmLd > 0 || sumThuMua > 0 ||
+                                                    sumThuMuaLd > 0)
+                                                ? Math.Max(rate, 1)
+                                                : rate;
+                                            //if (SupplierRegion == "Lâm Đồng" && rate < 1) { rate = sumVE / sumVcmMN; }
+                                        }
+                                        else if (rate > 1)
+                                        {
+                                            //if (sumVcmMN > sumVCM)
+                                            //{
+                                            //    rate = 1;
+                                            //}
+                                            /*else */
+                                            //if ((sumFarm + sumFarmLd + sumThuMua + sumThuMuaLd) / (sumVCM + sumVM) > 1)
+                                            //{
+                                            rate = (sumFarm + sumFarmLd + sumThuMua + sumThuMuaLd) / (sumVCM + sumVM);
+                                            rate = SupplierRegion != "Lâm Đồng" &&
+                                                   (YesNoKPI || sumFarm > 0 || sumFarmLd > 0 || sumThuMua > 0 ||
+                                                    sumThuMuaLd > 0)
+                                                ? Math.Max(rate, 1)
+                                                : rate;
+                                            if (rate < 1 && SupplierType == "VCM" && sumVE > 0)
+                                                rate = UpperCap;
+                                            //}
+                                        }
+                                    rate = UpperLimit > 0 ? Math.Min(rate, UpperLimit) : rate;
 
                                     #endregion
 
-                                    var _rate = rate;
-                                    if (coreStructure.dicPO[DatePO][_Product].Count <= totalSupplier) _rate = 1;
+                                    // Only the bravest would tread deeper.
+                                    // ... I was once young, brave and foolish ...
 
-                                    if (_SupplierForecast != null)
+                                    // Optimization - Filtering Customer Orders that has been dealt with.
+                                    //var ListCustomerOrder = coreStructure.dicPO[DatePO][_Product].Where(x => x.Value == true).ToDictionary(x => x.Key);
+                                    var ValidCustomerList = coreStructure.dicPO[DatePO][_Product].Where(x => x.Value)
+                                        .ToDictionary(x => x.Key).Keys
+                                        .Where(x =>
+                                            x.QuantityOrderKg >= 0.1 &&
+                                            coreStructure.dicCustomer[x.CustomerId].CustomerBigRegion == CustomerRegion &&
+                                            (PriorityTarget != ""
+                                                ? coreStructure.dicCustomer[x.CustomerId].CustomerType == PriorityTarget
+                                                : true) &&
+                                            (x.DesiredRegion == null ? true : x.DesiredRegion == SupplierRegion) &&
+                                            (x.DesiredSource == null ? true : x.DesiredSource == SupplierType))
+                                        .OrderByDescending(x => coreStructure.dicCustomer[x.CustomerId].CustomerCode)
+                                        //.Reverse()
+                                        .ToList();
+
+                                    do
                                     {
-                                        Dictionary<Product, Dictionary<CustomerOrder,
-                                            Dictionary<SupplierForecast, DateTime>>> _dicCoordProduct = null;
+                                        #region Qualified Suppliers.
 
-                                        if (coreStructure.dicCoord.TryGetValue(DatePO, out _dicCoordProduct))
+                                        SupplierForecast _SupplierForecast = null;
+
+                                        var _dicSupplierFC_inner = dicSupplierFC.Value
+                                            .Where(x => x.Key.QuantityForecast >= _MOQ)
+                                            .Where(x => coreStructure.dicSupplier[x.Key.SupplierId].SupplierRegion ==
+                                                        SupplierRegion &&
+                                                        coreStructure.dicSupplier[x.Key.SupplierId].SupplierType ==
+                                                        SupplierType &&
+                                                        (SupplierType != "VinEco"
+                                                            ? x.Key.Availability.Contains(
+                                                                Convert.ToString(
+                                                                    (int)DatePO.AddDays(-dayBefore).DayOfWeek + 1))
+                                                            : true) &&
+                                                        (x.Key.Target == "All" || x.Key.Target == PriorityTarget) &&
+                                                        (CrossRegion ? x.Key.CrossRegion : true))
+                                            .OrderBy(x => x.Key.Level)
+                                            .ThenByDescending(x => x.Key.FullOrder)
+                                            .ThenBy(x => coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][x.Key])
+                                            .ThenByDescending(x => x.Key.QuantityForecast)
+                                            .ThenByDescending(x => x.Key.LabelVinEco).ToDictionary(x => x.Key);
+
+                                        var result = _dicSupplierFC_inner.FirstOrDefault();
+                                        if (result.Key == null)
+                                            break;
+
+                                        var _CustomerOrder = ValidCustomerList
+                                            .Where(x => x.QuantityOrderKg * rate <= result.Key.QuantityForecast)
+                                            .FirstOrDefault();
+
+                                        if (_CustomerOrder == null)
+                                            _CustomerOrder = ValidCustomerList.OrderBy(x => x.QuantityOrderKg)
+                                                .FirstOrDefault();
+
+                                        if (_CustomerOrder == null)
+                                            break;
+
+                                        // Coz for fuck sake, it can return null
+
+                                        var totalSupplier = _dicSupplierFC_inner.Count();
+                                        _SupplierForecast = result.Key;
+
+                                        #endregion
+
+                                        var _rate = rate;
+                                        if (coreStructure.dicPO[DatePO][_Product].Count <= totalSupplier) _rate = 1;
+
+                                        if (_SupplierForecast != null)
                                         {
-                                            Dictionary<CustomerOrder, Dictionary<SupplierForecast, DateTime>>
-                                                _dicCoordCusSup = null;
-                                            if (_dicCoordProduct.TryGetValue(_Product, out _dicCoordCusSup))
+                                            Dictionary<Product, Dictionary<CustomerOrder,
+                                                Dictionary<SupplierForecast, DateTime>>> _dicCoordProduct = null;
+
+                                            if (coreStructure.dicCoord.TryGetValue(DatePO, out _dicCoordProduct))
                                             {
-                                                Dictionary<SupplierForecast, DateTime> _SupplierForecastCoord = null;
-                                                if (_dicCoordCusSup.TryGetValue(_CustomerOrder,
-                                                        out _SupplierForecastCoord) && _SupplierForecastCoord == null)
+                                                Dictionary<CustomerOrder, Dictionary<SupplierForecast, DateTime>>
+                                                    _dicCoordCusSup = null;
+                                                if (_dicCoordProduct.TryGetValue(_Product, out _dicCoordCusSup))
                                                 {
-                                                    wallet +=
-                                                    (YesNoKPI || YesNoContracted
-                                                        ? false
-                                                        : _SupplierForecast.FullOrder)
-                                                        ? _CustomerOrder.QuantityOrderKg
-                                                        : Math.Round(_CustomerOrder.QuantityOrderKg * _rate, 1);
-
-                                                    #region MOQ.
-
-                                                    if (wallet < _MOQ &&
-                                                        (YesNoKPI
-                                                            ? _SupplierForecast.QuantityForecastPlanned
-                                                            : (YesNoContracted
-                                                                ? _SupplierForecast.QuantityForecastContracted
-                                                                : _SupplierForecast.QuantityForecast)) >= _MOQ)
-                                                        wallet = _MOQ;
-
-                                                    //if (_MOQ == 0.05)
-                                                    //{
-                                                    //    // Let's hope this will never be hit.
-                                                    //    // I fucking do hope that.
-                                                    //    string OhMyFuckingGodWhy = "Holy shit idk, why, oh god, why";
-                                                    //}
-
-                                                    #endregion
-
-                                                    if (wallet < _MOQ && PriorityTarget != "") wallet = _MOQ;
-
-                                                    if (wallet >= _MOQ && _SupplierForecast.QuantityForecast >= _MOQ)
+                                                    Dictionary<SupplierForecast, DateTime> _SupplierForecastCoord = null;
+                                                    if (_dicCoordCusSup.TryGetValue(_CustomerOrder,
+                                                            out _SupplierForecastCoord) && _SupplierForecastCoord == null)
                                                     {
-                                                        //if (sumVE <= 0) { continue; }
-                                                        // Honestly, this should never be hit
-                                                        // Jk I changed stuff. This should ALWAYS be hit
-                                                        _SupplierForecastCoord =
-                                                            new Dictionary<SupplierForecast, DateTime>();
+                                                        wallet +=
+                                                        (YesNoKPI || YesNoContracted
+                                                            ? false
+                                                            : _SupplierForecast.FullOrder)
+                                                            ? _CustomerOrder.QuantityOrderKg
+                                                            : Math.Round(_CustomerOrder.QuantityOrderKg * _rate, 1);
 
-                                                        var _QuantityForecast = Math.Min(wallet,
-                                                            _SupplierForecast.QuantityForecast);
+                                                        #region MOQ.
 
-                                                        if (YesPlanningFuckMe)
-                                                            _QuantityForecast =
-                                                                Math.Min(Math.Max(wallet / totalSupplier, _MOQ),
-                                                                    _SupplierForecast.QuantityForecast);
+                                                        if (wallet < _MOQ &&
+                                                            (YesNoKPI
+                                                                ? _SupplierForecast.QuantityForecastPlanned
+                                                                : (YesNoContracted
+                                                                    ? _SupplierForecast.QuantityForecastContracted
+                                                                    : _SupplierForecast.QuantityForecast)) >= _MOQ)
+                                                            wallet = _MOQ;
 
-                                                        if (UpperCap > 0)
-                                                            _QuantityForecast =
-                                                                Math.Min(_CustomerOrder.QuantityOrderKg * UpperLimit,
-                                                                    _QuantityForecast);
+                                                        //if (_MOQ == 0.05)
+                                                        //{
+                                                        //    // Let's hope this will never be hit.
+                                                        //    // I fucking do hope that.
+                                                        //    string OhMyFuckingGodWhy = "Holy shit idk, why, oh god, why";
+                                                        //}
 
-                                                        _QuantityForecast = Math.Round(_QuantityForecast, 1);
+                                                        #endregion
 
-                                                        #region Unit.
+                                                        if (wallet < _MOQ && PriorityTarget != "") wallet = _MOQ;
 
-                                                        if (_CustomerOrder.Unit != "Kg")
+                                                        if (wallet >= _MOQ && _SupplierForecast.QuantityForecast >= _MOQ)
                                                         {
-                                                            var something = coreStructure
-                                                                .dicProductUnit[_Product.ProductCode].ListRegion
-                                                                .FirstOrDefault(x =>
-                                                                    x.OrderUnitType == _CustomerOrder.Unit);
-                                                            if (something != null)
-                                                            {
-                                                                var _SaleUnitPer = something.SaleUnitPer;
+                                                            //if (sumVE <= 0) { continue; }
+                                                            // Honestly, this should never be hit
+                                                            // Jk I changed stuff. This should ALWAYS be hit
+                                                            _SupplierForecastCoord =
+                                                                new Dictionary<SupplierForecast, DateTime>();
+
+                                                            var _QuantityForecast = Math.Min(wallet,
+                                                                _SupplierForecast.QuantityForecast);
+
+                                                            if (YesPlanningFuckMe)
                                                                 _QuantityForecast =
-                                                                    _QuantityForecast / _MOQ * _SaleUnitPer;
-                                                            }
-                                                        }
+                                                                    Math.Min(Math.Max(wallet / totalSupplier, _MOQ),
+                                                                        _SupplierForecast.QuantityForecast);
 
-                                                        #endregion
+                                                            if (UpperCap > 0)
+                                                                _QuantityForecast =
+                                                                    Math.Min(_CustomerOrder.QuantityOrderKg * UpperLimit,
+                                                                        _QuantityForecast);
 
-                                                        #region Defer extra days for Crossing Regions ( North --> South and vice versa. )
+                                                            _QuantityForecast = Math.Round(_QuantityForecast, 1);
 
-                                                        // To coup with merging PO ( Tue Thu Sat to Mon Wed Fri )
-                                                        var _Date = DatePO.AddDays(-dayBefore).Date;
-                                                        if (CrossRegion && _SupplierForecast.CrossRegion &&
-                                                            CustomerRegion == "Miền Bắc" &&
-                                                            SupplierRegion ==
-                                                            "Miền Nam" /*&& _Product.ProductCode.Substring(0, 1) == "K"*/ &&
-                                                            (_Date.DayOfWeek == DayOfWeek.Tuesday ||
-                                                             _Date.DayOfWeek == DayOfWeek.Thursday ||
-                                                             _Date.DayOfWeek == DayOfWeek.Saturday))
-                                                            _Date = _Date.AddDays(-1).Date;
+                                                            #region Unit.
 
-                                                        #endregion
-
-                                                        // To coup with Supply has custom rates, depending on Region.
-                                                        var _ProductRate = new ProductRate();
-                                                        double _Rate = 1;
-                                                        if (!YesNoKPI && SupplierRegion == "Miền Nam" &&
-                                                            coreStructure.dicProductRate.TryGetValue(
-                                                                _Product.ProductCode, out _ProductRate))
-                                                            switch (CustomerRegion)
+                                                            if (_CustomerOrder.Unit != "Kg")
                                                             {
-                                                                case "Miền Bắc":
-                                                                    _Rate = _ProductRate.ToNorth;
-                                                                    break;
-                                                                case "Miền Nam":
-                                                                    _Rate = _ProductRate.ToSouth;
-                                                                    break;
-                                                                default: break;
+                                                                var something = coreStructure
+                                                                    .dicProductUnit[_Product.ProductCode].ListRegion
+                                                                    .FirstOrDefault(x =>
+                                                                        x.OrderUnitType == _CustomerOrder.Unit);
+                                                                if (something != null)
+                                                                {
+                                                                    var _SaleUnitPer = something.SaleUnitPer;
+                                                                    _QuantityForecast =
+                                                                        _QuantityForecast / _MOQ * _SaleUnitPer;
+                                                                }
                                                             }
 
-                                                        var newId = Guid.NewGuid();
-                                                        _SupplierForecastCoord.Add(new SupplierForecast
-                                                        {
-                                                            _id = newId,
-                                                            SupplierForecastId = newId,
+                                                            #endregion
 
-                                                            SupplierId = _SupplierForecast.SupplierId,
-                                                            LabelVinEco = _SupplierForecast.LabelVinEco,
-                                                            FullOrder = _SupplierForecast.FullOrder,
-                                                            QualityControlPass = _SupplierForecast.QualityControlPass,
-                                                            CrossRegion = _SupplierForecast.CrossRegion,
-                                                            Level = _SupplierForecast.Level,
-                                                            Availability = _SupplierForecast.Availability,
-                                                            Target = _SupplierForecast.Target,
+                                                            #region Defer extra days for Crossing Regions ( North --> South and vice versa. )
 
-                                                            QuantityForecast = _QuantityForecast
-                                                        }, _Date);
+                                                            // To coup with merging PO ( Tue Thu Sat to Mon Wed Fri )
+                                                            var _Date = DatePO.AddDays(-dayBefore).Date;
+                                                            if (CrossRegion && _SupplierForecast.CrossRegion &&
+                                                                CustomerRegion == "Miền Bắc" &&
+                                                                SupplierRegion ==
+                                                                "Miền Nam" /*&& _Product.ProductCode.Substring(0, 1) == "K"*/ &&
+                                                                (_Date.DayOfWeek == DayOfWeek.Tuesday ||
+                                                                 _Date.DayOfWeek == DayOfWeek.Thursday ||
+                                                                 _Date.DayOfWeek == DayOfWeek.Saturday))
+                                                                _Date = _Date.AddDays(-1).Date;
 
-                                                        // KPI cases
-                                                        if (YesNoKPI)
-                                                        {
-                                                            _SupplierForecast.QuantityForecastPlanned -=
-                                                                _QuantityForecast;
-                                                            _SupplierForecast.QuantityForecastContracted -=
-                                                                _QuantityForecast;
+                                                            #endregion
+
+                                                            // To coup with Supply has custom rates, depending on Region.
+                                                            var _ProductRate = new ProductRate();
+                                                            double _Rate = 1;
+                                                            if (!YesNoKPI && SupplierRegion == "Miền Nam" &&
+                                                                coreStructure.dicProductRate.TryGetValue(
+                                                                    _Product.ProductCode, out _ProductRate))
+                                                                switch (CustomerRegion)
+                                                                {
+                                                                    case "Miền Bắc":
+                                                                        _Rate = _ProductRate.ToNorth;
+                                                                        break;
+                                                                    case "Miền Nam":
+                                                                        _Rate = _ProductRate.ToSouth;
+                                                                        break;
+                                                                    default: break;
+                                                                }
+
+                                                            var newId = Guid.NewGuid();
+                                                            _SupplierForecastCoord.Add(new SupplierForecast
+                                                            {
+                                                                _id = newId,
+                                                                SupplierForecastId = newId,
+
+                                                                SupplierId = _SupplierForecast.SupplierId,
+                                                                LabelVinEco = _SupplierForecast.LabelVinEco,
+                                                                FullOrder = _SupplierForecast.FullOrder,
+                                                                QualityControlPass = _SupplierForecast.QualityControlPass,
+                                                                CrossRegion = _SupplierForecast.CrossRegion,
+                                                                Level = _SupplierForecast.Level,
+                                                                Availability = _SupplierForecast.Availability,
+                                                                Target = _SupplierForecast.Target,
+
+                                                                QuantityForecast = _QuantityForecast
+                                                            }, _Date);
+
+                                                            // KPI cases
+                                                            if (YesNoKPI)
+                                                            {
+                                                                _SupplierForecast.QuantityForecastPlanned -=
+                                                                    _QuantityForecast;
+                                                                _SupplierForecast.QuantityForecastContracted -=
+                                                                    _QuantityForecast;
+                                                            }
+                                                            // Minimum cases
+                                                            else if (YesNoContracted)
+                                                            {
+                                                                _SupplierForecast.QuantityForecastContracted -=
+                                                                    _QuantityForecast;
+                                                            }
+                                                            // Default cases
+                                                            _SupplierForecast.QuantityForecast -= _QuantityForecast;
+                                                            _SupplierForecast.QuantityForecastOriginal -= _QuantityForecast;
+                                                            if (!_SupplierForecast.FullOrder &&
+                                                                _SupplierForecast.QuantityForecast <= 0)
+                                                                _SupplierForecast.QuantityForecast = _MOQ * 7;
+                                                            // To make sure Full Order Supplier will still go.
+
+                                                            // Pretty sure I don't need to recalculate sumVCM here anymore.
+                                                            // Only sumVE matters here, to trigger a break.
+                                                            // Then again even that is not really needed.
+                                                            //sumVCM -= _CustomerOrder.QuantityOrder;
+                                                            //sumVE -= !YesNoContracted && !YesNoKPI && _SupplierForecast.FullOrder ? 0 : _QuantityForecast;
+
+                                                            //// Recalculating _rate - Unneccesary here I think.
+                                                            //_rate = sumVCM <= 0 ? 0 : Math.Min(sumVCM != 0 ? sumVE / sumVCM : 0, UpperLimit);
+                                                            //_rate = sumVCM <= 0 ? 0 : ((SupplierType == "VinEco") && (sumVEThuMua > 0) ? Math.Max(_rate, 1) : _rate);
+
+                                                            coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] =
+                                                                _SupplierForecastCoord;
+                                                            coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][
+                                                                _SupplierForecast] += wallet;
+
+                                                            //coreStructure.dicPO[DatePO][_Product][_CustomerOrder] = false;
+
+                                                            // Roburst way, might optimize Procedures a little bit better.
+                                                            // Remove Customers and Suppliers fulfilled their roles.
+
+                                                            if (YesPlanningFuckMe && _CustomerOrder.QuantityOrder >=
+                                                                _QuantityForecast)
+                                                            {
+                                                                var CustomerOrder = new CustomerOrder();
+
+                                                                CustomerOrder.Company = _CustomerOrder.Company;
+                                                                CustomerOrder.CustomerId = _CustomerOrder.CustomerId;
+                                                                CustomerOrder.CustomerOrderId = Guid.NewGuid();
+                                                                CustomerOrder.DesiredRegion = _CustomerOrder.DesiredRegion;
+                                                                CustomerOrder.DesiredSource = _CustomerOrder.DesiredSource;
+                                                                CustomerOrder.QuantityOrder =
+                                                                    _CustomerOrder.QuantityOrder - _QuantityForecast;
+                                                                CustomerOrder.QuantityOrderKg =
+                                                                    _CustomerOrder.QuantityOrderKg - _QuantityForecast;
+                                                                CustomerOrder.Unit = _CustomerOrder.Unit;
+                                                                CustomerOrder._id = CustomerOrder.CustomerOrderId;
+
+                                                                _CustomerOrder.QuantityOrder =
+                                                                    Math.Min(_CustomerOrder.QuantityOrder,
+                                                                        _QuantityForecast);
+                                                                _CustomerOrder.QuantityOrderKg =
+                                                                    Math.Min(_CustomerOrder.QuantityOrderKg,
+                                                                        _QuantityForecast);
+
+                                                                coreStructure.dicPO[DatePO][_Product]
+                                                                    .Add(CustomerOrder, true);
+
+                                                                coreStructure.dicCoord[DatePO][_Product]
+                                                                    .Add(CustomerOrder, null);
+
+                                                                goto restartThis;
+                                                            }
+
+                                                            if (_SupplierForecast.QuantityForecast < _MOQ)
+                                                            {
+                                                                coreStructure.dicFC[DatePO.AddDays(-dayBefore)][_Product]
+                                                                    .Remove(_SupplierForecast);
+                                                                //_dicSupplierFC_inner.Remove(_SupplierForecast);
+                                                                dicSupplierFC.Value.Remove(_SupplierForecast);
+                                                            }
+
+                                                            wallet -= _QuantityForecast;
                                                         }
-                                                        // Minimum cases
-                                                        else if (YesNoContracted)
-                                                        {
-                                                            _SupplierForecast.QuantityForecastContracted -=
-                                                                _QuantityForecast;
-                                                        }
-                                                        // Default cases
-                                                        _SupplierForecast.QuantityForecast -= _QuantityForecast;
-                                                        _SupplierForecast.QuantityForecastOriginal -= _QuantityForecast;
-                                                        if (!_SupplierForecast.FullOrder &&
-                                                            _SupplierForecast.QuantityForecast <= 0)
-                                                            _SupplierForecast.QuantityForecast = _MOQ * 7;
-                                                        // To make sure Full Order Supplier will still go.
+                                                        coreStructure.dicPO[DatePO][_Product].Remove(_CustomerOrder);
+                                                        //ListCustomerOrder.Remove(_CustomerOrder);
+                                                        ValidCustomerList.Remove(_CustomerOrder);
 
-                                                        // Pretty sure I don't need to recalculate sumVCM here anymore.
-                                                        // Only sumVE matters here, to trigger a break.
-                                                        // Then again even that is not really needed.
-                                                        //sumVCM -= _CustomerOrder.QuantityOrder;
-                                                        //sumVE -= !YesNoContracted && !YesNoKPI && _SupplierForecast.FullOrder ? 0 : _QuantityForecast;
+                                                        if (coreStructure.dicPO[DatePO][_Product].Count == 0)
+                                                            coreStructure.dicPO[DatePO].Remove(_Product);
 
-                                                        //// Recalculating _rate - Unneccesary here I think.
-                                                        //_rate = sumVCM <= 0 ? 0 : Math.Min(sumVCM != 0 ? sumVE / sumVCM : 0, UpperLimit);
-                                                        //_rate = sumVCM <= 0 ? 0 : ((SupplierType == "VinEco") && (sumVEThuMua > 0) ? Math.Max(_rate, 1) : _rate);
-
-                                                        coreStructure.dicCoord[DatePO][_Product][_CustomerOrder] =
-                                                            _SupplierForecastCoord;
-                                                        coreStructure.dicDeli[DatePO.AddDays(-dayBefore)][_Product][
-                                                            _SupplierForecast] += wallet;
-
-                                                        //coreStructure.dicPO[DatePO][_Product][_CustomerOrder] = false;
-
-                                                        // Roburst way, might optimize Procedures a little bit better.
-                                                        // Remove Customers and Suppliers fulfilled their roles.
-
-                                                        if (YesPlanningFuckMe && _CustomerOrder.QuantityOrder >=
-                                                            _QuantityForecast)
-                                                        {
-                                                            var CustomerOrder = new CustomerOrder();
-
-                                                            CustomerOrder.Company = _CustomerOrder.Company;
-                                                            CustomerOrder.CustomerId = _CustomerOrder.CustomerId;
-                                                            CustomerOrder.CustomerOrderId = Guid.NewGuid();
-                                                            CustomerOrder.DesiredRegion = _CustomerOrder.DesiredRegion;
-                                                            CustomerOrder.DesiredSource = _CustomerOrder.DesiredSource;
-                                                            CustomerOrder.QuantityOrder =
-                                                                _CustomerOrder.QuantityOrder - _QuantityForecast;
-                                                            CustomerOrder.QuantityOrderKg =
-                                                                _CustomerOrder.QuantityOrderKg - _QuantityForecast;
-                                                            CustomerOrder.Unit = _CustomerOrder.Unit;
-                                                            CustomerOrder._id = CustomerOrder.CustomerOrderId;
-
-                                                            _CustomerOrder.QuantityOrder =
-                                                                Math.Min(_CustomerOrder.QuantityOrder,
-                                                                    _QuantityForecast);
-                                                            _CustomerOrder.QuantityOrderKg =
-                                                                Math.Min(_CustomerOrder.QuantityOrderKg,
-                                                                    _QuantityForecast);
-
-                                                            coreStructure.dicPO[DatePO][_Product]
-                                                                .Add(CustomerOrder, true);
-
-                                                            coreStructure.dicCoord[DatePO][_Product]
-                                                                .Add(CustomerOrder, null);
-
-                                                            goto restartThis;
-                                                        }
-
-                                                        if (_SupplierForecast.QuantityForecast < _MOQ)
-                                                        {
-                                                            coreStructure.dicFC[DatePO.AddDays(-dayBefore)][_Product]
-                                                                .Remove(_SupplierForecast);
-                                                            //_dicSupplierFC_inner.Remove(_SupplierForecast);
-                                                            dicSupplierFC.Value.Remove(_SupplierForecast);
-                                                        }
-
-                                                        wallet -= _QuantityForecast;
+                                                        if (coreStructure.dicPO[DatePO].Keys.Count == 0)
+                                                            coreStructure.dicPO.Remove(DatePO);
                                                     }
-                                                    coreStructure.dicPO[DatePO][_Product].Remove(_CustomerOrder);
-                                                    //ListCustomerOrder.Remove(_CustomerOrder);
-                                                    ValidCustomerList.Remove(_CustomerOrder);
-
-                                                    if (coreStructure.dicPO[DatePO][_Product].Count == 0)
-                                                        coreStructure.dicPO[DatePO].Remove(_Product);
-
-                                                    if (coreStructure.dicPO[DatePO].Keys.Count == 0)
-                                                        coreStructure.dicPO.Remove(DatePO);
                                                 }
                                             }
                                         }
-                                    }
-                                } while (ValidCustomerList.Count > 0);
+                                    } while (ValidCustomerList.Count > 0);
+                                }
                             }
                         }
                     }
-                }
                 //}
                 stopwatch.Stop();
                 WriteToRichTextBoxOutput(string.Format(" - Done in {0}s!",
@@ -5707,6 +5712,9 @@ namespace ChiaHang
                         foreach (var _SupplierForecast in _ProductForecast.ListSupplierForecast
                             .Reverse<SupplierForecast>())
                         {
+                            if (_SupplierForecast.FullOrder)
+                                _SupplierForecast.QuantityForecast = Math.Max(_SupplierForecast.QuantityForecast, 7);
+
                             /// <! For debugging Purposes !>
                             //if (_ForecastDate.DateForecast.Day == 16 && Product.Where(x => x.ProductId == _ProductForecast.ProductId).FirstOrDefault().ProductCode == "A04201" && Supplier.Where(x => x.SupplierId == _SupplierForecast.SupplierId).FirstOrDefault().SupplierCode == "AG03030000")
                             //{
@@ -6028,12 +6036,12 @@ namespace ChiaHang
                                     OrderUnitPer =
                                         ProperUnit(dr["OrderUnitType"].ToString(), dicUnit) == "Kg"
                                             ? 1
-                                            : (double) dr["OderUnitPer"],
+                                            : (double)dr["OderUnitPer"],
                                     SaleUnitType = ProperUnit(dr["SaleUnitType"].ToString(), dicUnit),
                                     SaleUnitPer =
                                         ProperUnit(dr["SaleUnitType"].ToString(), dicUnit) == "Kg"
                                             ? 1
-                                            : (double) dr["SaleUnitPer"]
+                                            : (double)dr["SaleUnitPer"]
                                 };
 
                                 var _ListRegion = new List<ProductUnitRegion>();
@@ -6056,12 +6064,12 @@ namespace ChiaHang
                                         OrderUnitPer =
                                             ProperUnit(dr["OrderUnitType"].ToString(), dicUnit) == "Kg"
                                                 ? 1
-                                                : (double) dr["OrderUnitPer"],
+                                                : (double)dr["OrderUnitPer"],
                                         SaleUnitType = ProperUnit(dr["SaleUnitType"].ToString(), dicUnit),
                                         SaleUnitPer =
                                             ProperUnit(dr["SaleUnitType"].ToString(), dicUnit) == "Kg"
                                                 ? 1
-                                                : (double) dr["SaleUnitPer"]
+                                                : (double)dr["SaleUnitPer"]
                                     };
                                     _ProductUnit.ListRegion.Add(_ProductUnitRegion);
                                 }
@@ -6075,12 +6083,12 @@ namespace ChiaHang
                                         OrderUnitPer =
                                             ProperUnit(dr["OrderUnitType"].ToString(), dicUnit) == "Kg"
                                                 ? 1
-                                                : (double) dr["OrderUnitPer"],
+                                                : (double)dr["OrderUnitPer"],
                                         SaleUnitType = ProperUnit(dr["SaleUnitType"].ToString(), dicUnit),
                                         SaleUnitPer =
                                             ProperUnit(dr["SaleUnitType"].ToString(), dicUnit) == "Kg"
                                                 ? 1
-                                                : (double) dr["SaleUnitPer"]
+                                                : (double)dr["SaleUnitPer"]
                                     };
                                 }
                             }
@@ -6103,11 +6111,11 @@ namespace ChiaHang
                                 OrderUnitPer =
                                     ProperUnit(dr["OrderUnitType"].ToString(), dicUnit) == "Kg"
                                         ? 1
-                                        : (double) dr["OrderUnitPer"],
+                                        : (double)dr["OrderUnitPer"],
                                 SaleUnitType = ProperUnit(dr["SaleUnitType"].ToString(), dicUnit),
                                 SaleUnitPer = ProperUnit(dr["SaleUnitType"].ToString(), dicUnit) == "Kg"
                                     ? 1
-                                    : (double) dr["SaleUnitPer"]
+                                    : (double)dr["SaleUnitPer"]
                             });
 
                             ProductUnitList.Add(_ProductUnit);
@@ -6128,7 +6136,7 @@ namespace ChiaHang
 
                 xlWs = xlWb.Worksheets["CrossRegion"];
 
-                dt = new DataTable {TableName = "CrossRegion"};
+                dt = new DataTable { TableName = "CrossRegion" };
 
                 dt = xlWs.Cells.ExportDataTable(0, 0, xlWs.Cells.MaxDataRow + 1, xlWs.Cells.MaxDataColumn + 1, opts);
 
@@ -6161,7 +6169,7 @@ namespace ChiaHang
 
                 xlWs = xlWb.Worksheets["ProductRate"];
 
-                dt = new DataTable {TableName = "ProductRate Table"};
+                dt = new DataTable { TableName = "ProductRate Table" };
                 dt = xlWs.Cells.ExportDataTable(0, 0, xlWs.Cells.MaxDataRow + 1, xlWs.Cells.MaxDataColumn + 1, opts);
 
                 foreach (DataRow dr in dt.Rows)
@@ -6234,7 +6242,7 @@ namespace ChiaHang
 
                 xlWs = xlWb.Worksheets["ExtraProductInformation"];
 
-                dt = new DataTable {TableName = "ExtraProductInformation Table"};
+                dt = new DataTable { TableName = "ExtraProductInformation Table" };
                 dt = xlWs.Cells.ExportDataTable(0, 0, xlWs.Cells.MaxDataRow + 1, xlWs.Cells.MaxDataColumn + 1, opts);
 
                 foreach (DataRow dr in dt.Rows)
@@ -6263,7 +6271,7 @@ namespace ChiaHang
 
                 xlWs = xlWb.Worksheets["MasterList"];
 
-                dt = new DataTable {TableName = "MasterList Table"};
+                dt = new DataTable { TableName = "MasterList Table" };
                 dt = xlWs.Cells.ExportDataTable(0, 0, xlWs.Cells.MaxDataRow + 1, xlWs.Cells.MaxDataColumn + 1, opts);
 
                 var ProductMasterList = new Dictionary<Guid, string>();
@@ -6272,8 +6280,8 @@ namespace ChiaHang
                     var _Product = Product.Where(x => x.ProductCode == dr["Code"].ToString()).FirstOrDefault();
                     if (_Product != null)
                     {
-                        if ((string) dr["North"] == "Yes") _Product.ProductNote.Add("North");
-                        if ((string) dr["South"] == "Yes") _Product.ProductNote.Add("South");
+                        if ((string)dr["North"] == "Yes") _Product.ProductNote.Add("North");
+                        if ((string)dr["South"] == "Yes") _Product.ProductNote.Add("South");
                     }
                 }
 
@@ -6288,7 +6296,7 @@ namespace ChiaHang
 
                 xlWs = xlWb.Worksheets["Priority"];
 
-                dt = new DataTable {TableName = "Priority Table"};
+                dt = new DataTable { TableName = "Priority Table" };
                 dt = xlWs.Cells.ExportDataTable(0, 0, xlWs.Cells.MaxDataRow + 1, xlWs.Cells.MaxDataColumn + 1, opts);
 
                 var ListCustomer = db.GetCollection<Customer>("Customer").AsQueryable().ToList();
@@ -6837,7 +6845,7 @@ namespace ChiaHang
                 opts.FormatStrategy = CellValueFormatStrategy.None;
                 opts.ExportColumnName = true;
 
-                var dt = new DataTable {TableName = xlWs.Name};
+                var dt = new DataTable { TableName = xlWs.Name };
                 dt = xlWs.Cells.ExportDataTable(rowIndex, 0, xlWs.Cells.MaxDataRow + 1, xlWs.Cells.MaxDataColumn + 1,
                     opts);
 
@@ -7641,7 +7649,7 @@ namespace ChiaHang
                     ExportColumnName = true
                 };
 
-                var dt = new DataTable {TableName = xlWs.Name};
+                var dt = new DataTable { TableName = xlWs.Name };
                 dt = xlWs.Cells.ExportDataTable(rowIndex, 0, xlWs.Cells.MaxDataRow + 1, xlWs.Cells.MaxDataColumn + 1,
                     opts);
 
@@ -7982,7 +7990,7 @@ namespace ChiaHang
                 rowIndex--;
 
                 // Import into a DataTable.
-                var dt = new DataTable {TableName = xlWs.Name};
+                var dt = new DataTable { TableName = xlWs.Name };
                 dt = xlWs.Cells.ExportDataTable(rowIndex, 0, xlWs.Cells.MaxDataRow + 1, xlWs.Cells.MaxDataColumn + 1,
                     true);
 
@@ -8001,7 +8009,7 @@ namespace ChiaHang
                     var _Product = core.dicProduct.Values.Where(x => x.ProductCode == _ProductCode).FirstOrDefault();
 
                     // Customer.
-                    var _CustomerCode = (string) dr["CCODE"];
+                    var _CustomerCode = (string)dr["CCODE"];
                     var _Customer = core.dicCustomer.Values.Where(x => x.CustomerCode == _CustomerCode)
                         .FirstOrDefault();
 
@@ -8517,7 +8525,7 @@ namespace ChiaHang
                 {
                     xlWs = xlWb.Worksheets[sheetName]; //xlWb2.Worksheets.Count];
                 }
-                var rangeToDelete = xlWs.get_Range("A" + RowFirst, (Range) xlWs.Cells[rowTotal, colTotal]);
+                var rangeToDelete = xlWs.get_Range("A" + RowFirst, (Range)xlWs.Cells[rowTotal, colTotal]);
                 rangeToDelete.EntireRow.Delete();
 
                 //int _wsIndex = xlWb2.Worksheets.Add();
@@ -8537,7 +8545,7 @@ namespace ChiaHang
                     for (var i = 0; i < colTotal; i++)
                         Header[i] = dt.Columns[i].ColumnName;
 
-                    var HeaderRange = xlWs.get_Range((Range) xlWs.Cells[RowFirst, 1], (Range) xlWs.Cells[1, colTotal]);
+                    var HeaderRange = xlWs.get_Range((Range)xlWs.Cells[RowFirst, 1], (Range)xlWs.Cells[1, colTotal]);
                     HeaderRange.Value = Header;
                     HeaderRange.Interior.Color = ColorTranslator.ToOle(Color.LightGray);
                     HeaderRange.Font.Bold = true;
@@ -8586,8 +8594,8 @@ namespace ChiaHang
                     count++;
                     if (count >= rowPerBlock)
                     {
-                        xlWs.get_Range((Range) xlWs.Cells[rowPos + _RowFirst, 1],
-                            (Range) xlWs.Cells[rowPos + rowPerBlock + _RowFirst - 1, colTotal]).Formula = dbCells;
+                        xlWs.get_Range((Range)xlWs.Cells[rowPos + _RowFirst, 1],
+                            (Range)xlWs.Cells[rowPos + rowPerBlock + _RowFirst - 1, colTotal]).Formula = dbCells;
                         //xlWs2.Range[rowPos + _RowFirst, 1].Resize[rowPos + rowPerBlock + _RowFirst - 1, colTotal].Value = dbCells;
                         dbCells = new object[Math.Min(rowTotal - rowPos, rowPerBlock), colTotal];
                         count = 0;
@@ -8596,8 +8604,8 @@ namespace ChiaHang
                     rowIndex++;
                 }
 
-                xlWs.get_Range((Range) xlWs.Cells[Math.Max(rowPos + _RowFirst, 2), 1],
-                    (Range) xlWs.Cells[rowPos + rowPerBlock + _RowFirst - 1, colTotal]).Formula = dbCells;
+                xlWs.get_Range((Range)xlWs.Cells[Math.Max(rowPos + _RowFirst, 2), 1],
+                    (Range)xlWs.Cells[rowPos + rowPerBlock + _RowFirst - 1, colTotal]).Formula = dbCells;
                 //xlWs2.Range["A" + RowFirst].get_Resize(dbCells.Length[0], dbCells.Length(1)).Value = dbCells;
 
                 dbCells = null;
@@ -8767,7 +8775,7 @@ namespace ChiaHang
                             DateTime _value;
                             var _dateValue = 0;
                             if (DateTime.TryParse(dt.Columns[columnNum - 1].ColumnName, out _value))
-                                _dateValue = (int) (_value.Date - new DateTime(1900, 1, 1)).TotalDays + 2;
+                                _dateValue = (int)(_value.Date - new DateTime(1900, 1, 1)).TotalDays + 2;
 
                             //write the cell value
                             var cell = new Cell
@@ -8779,7 +8787,7 @@ namespace ChiaHang
                                 CellValue = new CellValue(type == typeof(double) && _dateValue != 0
                                     ? _dateValue.ToString()
                                     : dt.Columns[columnNum - 1].ColumnName),
-                                StyleIndex = (uint) (type == typeof(double) && _dateValue != 0 ? 1 : 0)
+                                StyleIndex = (uint)(type == typeof(double) && _dateValue != 0 ? 1 : 0)
                             };
                             writer.WriteElement(cell);
 
@@ -8838,7 +8846,7 @@ namespace ChiaHang
                                 CellReference = string.Format("{0}{1}", dicColName[columnNum],
                                     YesNoHeader ? rowNum + 1 : rowNum),
                                 CellValue = new CellValue(dr[columnNum - 1].ToString()),
-                                StyleIndex = (uint) (DicDateCol.ContainsKey(colName) ? 1 : 0)
+                                StyleIndex = (uint)(DicDateCol.ContainsKey(colName) ? 1 : 0)
                             });
 
                             //writer.WriteElement(new CellValue(string.Format("This is Row {0}, Cell {1}", rowNum, columnNum)));
@@ -9431,17 +9439,17 @@ namespace ChiaHang
             var ExcludedChars = "(-)"; // lol.
 
             for (var i = 33; i < 48; i++)
-                if (!ExcludedChars.Contains(((char) i).ToString()))
-                    text = text.Replace(((char) i).ToString(), "");
+                if (!ExcludedChars.Contains(((char)i).ToString()))
+                    text = text.Replace(((char)i).ToString(), "");
 
             for (var i = 58; i < 65; i++)
-                text = text.Replace(((char) i).ToString(), "");
+                text = text.Replace(((char)i).ToString(), "");
 
             for (var i = 91; i < 97; i++)
-                text = text.Replace(((char) i).ToString(), "");
+                text = text.Replace(((char)i).ToString(), "");
 
             for (var i = 123; i < 127; i++)
-                text = text.Replace(((char) i).ToString(), "");
+                text = text.Replace(((char)i).ToString(), "");
             //text = text.Replace(" ", "-"); //Comment lại để không đưa khoảng trắng thành ký tự -
             var regex = new Regex(@"\p{IsCombiningDiacriticalMarks}+");
 
