@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ChiaHang
+namespace AllocatingStuff
 {
     partial class MainForm
     {

@@ -103,6 +103,9 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FuncCoord.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="MainWForm.cs">
       <SubType>Form</SubType>
     </Compile>
