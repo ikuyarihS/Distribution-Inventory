@@ -558,8 +558,6 @@ namespace AllocatingStuff
             }
         }
 
-        
-
         /// <summary>
         ///     The Main Character.
         ///     Never die
@@ -3014,10 +3012,8 @@ namespace AllocatingStuff
 
                         #region Output to Excel - Aspose.Cell with Optimized Memory Settings.
 
-                        var fileName = string.Format("Mastah Compact {1}{0}.xlsb",
-                            DateFrom.AddDays(dayDistance).ToString("dd.MM") + " - " +
-                            DateTo.AddDays(-dayDistance).ToString("dd.MM") + " (" +
-                            DateTime.Now.ToString("yyyyMMdd HH\\hmm") + ")", FruitOnly ? "Fruit " : "");
+                        var fileName =
+                            $"Mastah Compact {UpperCap:P0} {(FruitOnly ? "Fruit " : "")}{DateFrom.AddDays(dayDistance).ToString("dd.MM") + " - " + DateTo.AddDays(-dayDistance).ToString("dd.MM") + " (" + DateTime.Now.ToString("yyyyMMdd HH\\hmm") + ")"}.xlsb";
                         var path = string.Format(
                             @"D:\Documents\Stuff\VinEco\Mastah Project\Test\" + fileName);
 
@@ -3306,7 +3302,8 @@ namespace AllocatingStuff
             }
             catch (Exception ex)
             {
-                throw ex;
+                WriteToRichTextBoxOutput(ex.Message);
+                throw;
             }
             finally
             {
@@ -4843,34 +4840,6 @@ namespace AllocatingStuff
 
                 var Product = db.GetCollection<Product>("Product").AsQueryable().ToList();
                 var ProductUnitList = new List<ProductUnit>();
-
-                // Remember the list of running Excel.Application.
-                // Before initialize xlApp.
-                var processBefore = Process.GetProcessesByName("excel");
-
-                // Initialize new instance of Interop Excel.Application.
-                var xlApp = new Microsoft.Office.Interop.Excel.Application
-                {
-                    ScreenUpdating = false,
-                    EnableEvents = false,
-                    DisplayAlerts = false,
-                    DisplayStatusBar = false,
-                    AskToUpdateLinks = false
-                };
-
-                // Remember the list of running Excel.Application.
-                // After initialize xlApp.
-                var processAfter = Process.GetProcessesByName("excel");
-
-                var processID = 0;
-
-                // Compare two lists, get the first and the only process that's not in the 'Before' List.
-                foreach (var process in processAfter)
-                    if (!processBefore.Select(p => p.Id).Contains(process.Id))
-                    {
-                        processID = process.Id;
-                        break;
-                    }
 
                 var filePath =
                     string.Format("D:\\Documents\\Stuff\\VinEco\\Mastah Project\\{0}",
@@ -6555,6 +6524,8 @@ namespace AllocatingStuff
             {
                 var stopwatch = Stopwatch.StartNew();
 
+                Debug.WriteLine($"File: {xlWs.Workbook.FileName}");
+
                 var dicUnit = new Dictionary<string, string>(StringComparer.Ordinal);
                 // Find first row.
                 var rowIndex = 0;
@@ -6562,20 +6533,31 @@ namespace AllocatingStuff
                 var value = string.Empty;
                 do
                 {
-                    value = xlWs.Cells[rowIndex, colIndex].Value?.ToString();
-                    if (value == null || (value != "VE Code" && value != "Mã Planning"))
-                        rowIndex++;
+                    value = xlWs.Cells[rowIndex, colIndex].Value?.ToString().Trim();
+
+                    if (value == "VE Code" || value == "Mã Planning" || value == "Mã Planing")
+                        break;
+
+                    //if (value == null || value == string.Empty || (value != "VE Code" && value != "Mã Planning"))
+                    //    rowIndex++;
+                    //else
+                    //    break;
+
+                    rowIndex++;
+
                     if (rowIndex > 100)
                     {
                         colIndex++;
+                        if (colIndex > 100) break;
                         rowIndex = 0;
                     }
-                } while ((value == null || (value != "VE Code" && value != "Mã Planning")) &&
+                } while ((value == null || value == string.Empty || (value != "VE Code" && value != "Mã Planning")) &&
                          rowIndex <= 100 &&
                          colIndex <= 100);
 
-                if (rowIndex > xlWs.Cells.MaxDataRow + 1)
+                if (rowIndex > 100 || colIndex > 100)
                 {
+                    Debug.WriteLine($"Sai định dạng - {xlWs.Workbook.FileName}");
                     WriteToRichTextBoxOutput($"Sai định dạng - {xlWs.Workbook.FileName}");
                     return;
                 }
@@ -6599,8 +6581,8 @@ namespace AllocatingStuff
                 //var mongoClient = new MongoClient();
                 //var db = mongoClient.GetDatabase("localtest").GetCollection<PurchaseOrderDate>("PurchaseOrder");
 
-                if (dt.Columns.Contains("Mã Planning"))
-                    dt.Columns["Mã Planning"].ColumnName = "VE Code";
+                if (!dt.Columns.Contains("VE Code"))
+                    dt.Columns[colIndex].ColumnName = "VE Code";
 
                 if (dt.Columns.Contains("Tỉnh tiêu thụ"))
                     dt.Columns["Tỉnh tiêu thụ"].ColumnName = "Region";
@@ -6656,6 +6638,11 @@ namespace AllocatingStuff
                         // Loop for every value
                         foreach (DataRow dr in dt.Rows)
                         {
+                            if (dr["VE Code"] != DBNull.Value && dr["VE Code"].ToString().Substring(0, 1) == "9")
+                            {
+                                byte whatInTheActualFuck = 0;
+                                whatInTheActualFuck++;
+                            }
                             // If OrderQuantity is not 0 - Not Anymore?
                             //object _OrderQuantity = dr[dc.ColumnName];
                             double _value = 0;

@@ -59,7 +59,7 @@ namespace AllocatingStuff
         ///     The Core of all Algorithm.
         ///     Where everything begins and ends.
         /// </summary>
-        private static void Coord(CoordStructure coreStructure, string SupplierRegion, string CustomerRegion,
+        private void Coord(CoordStructure coreStructure, string SupplierRegion, string CustomerRegion,
             string SupplierType, byte dayBefore, byte dayLdBefore, double UpperLimit, bool CrossRegion = false,
             string PriorityTarget = "", bool YesNoByUnit = false, bool YesNoContracted = false, bool YesNoKPI = false)
         {
@@ -895,7 +895,8 @@ namespace AllocatingStuff
             }
             catch (Exception ex)
             {
-                throw ex;
+                WriteToRichTextBoxOutput(ex.Message);
+                throw;
             }
             finally
             {
