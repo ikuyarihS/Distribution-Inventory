@@ -1065,7 +1065,11 @@ namespace AllocatingStuff
                     CoordCaller(coreStructure, ListRegion, "ThuMua", 1, "B2B", YesNoByUnit, false, true);
                 }
 
+                if (!YesNoOnlyFarm)
+                    CoordCaller(coreStructure, ListRegion, "VCM", UpperCap, "VM+ VinEco", YesNoByUnit);
+
                 CoordCaller(coreStructure, ListRegion, "VinEco", 1, "VM+ VinEco", YesNoByUnit, false, true);
+
                 if (!YesNoOnlyFarm)
                 {
                     CoordCaller(coreStructure, ListRegion, "ThuMua", 1, "VM+ VinEco", YesNoByUnit, false, true);
@@ -1074,11 +1078,8 @@ namespace AllocatingStuff
 
                 CoordCaller(coreStructure, ListRegion, "VinEco", 1, "VM+ VinEco", YesNoByUnit);
                 if (!YesNoOnlyFarm)
-                {
                     CoordCaller(coreStructure, ListRegion, "ThuMua", 1, "VM+ VinEco", YesNoByUnit);
-                    CoordCaller(coreStructure, ListRegion, "VCM", 1, "VM+ VinEco", YesNoByUnit);
-                }
-
+                
                 // In any cases, VCM's Vendors go first.
                 // Targetting their Ship-to, with their specific Vendors' target defined in FC.
                 // VinMart Plus > VinMart.
@@ -4200,9 +4201,7 @@ namespace AllocatingStuff
 
                 foreach (var _FileInfo in ListFile)
                 {
-                    var opt = new LoadOptions();
-                    opt.MemorySetting = MemorySetting.MemoryPreference;
-
+                    var opt = new LoadOptions {MemorySetting = MemorySetting.MemoryPreference};
                     var xlWbAspose = new Workbook(_FileInfo.FullName, opt);
                     var xlWsAspose = xlWbAspose.Worksheets.OrderByDescending(x => x.Cells.MaxDataRow).First();
 
