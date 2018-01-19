@@ -21,24 +21,30 @@ namespace AllocatingStuff
 
                 double upperLimitLocal = upperLimit;
 
-                if (priorityTarget == "VM+" || priorityTarget == "VM+ Priority" && UpperCap > 0)
+                //if (priorityTarget == "VM+" || priorityTarget == "VM+ Priority" && UpperCap > 0)
+                //    upperLimitLocal = 1.1;
+
+                if (priorityTarget.Contains("VM+") && UpperCap > 0)
+                    //upperLimitLocal = priorityTarget == "VM+" && (string) listRegion[index, 1] == "Miền Nam"
+                    //    ? 1.4
+                    //    : 1.1;
                     upperLimitLocal = 1.1;
 
                 // Obey upperLimit in B2B cases.
                 if (priorityTarget != "B2B" && UpperCap <= -1)
                     upperLimitLocal = -1;
 
-                if (priorityTarget == "VM+ VinEco")
-                    // ReSharper disable once SwitchStatementMissingSomeCases
-                    switch ((string) listRegion[index, 1])
-                    {
-                        case "Miền Bắc":
-                            upperLimitLocal = 1.1;
-                            break;
-                        case "Miền Nam":
-                            upperLimitLocal = 1.4;
-                            break;
-                    }
+                //if (priorityTarget == "VM+ VinEco")
+                //    // ReSharper disable once SwitchStatementMissingSomeCases
+                //    switch ((string) listRegion[index, 1])
+                //    {
+                //        case "Miền Bắc":
+                //            upperLimitLocal = 1.1;
+                //            break;
+                //        case "Miền Nam":
+                //            upperLimitLocal = 1.1;
+                //            break;
+                //    }
 
                 // Even in unlimited case, ThuMua cap at 100%.
                     // ReSharper disable once SwitchStatementMissingSomeCases
@@ -51,6 +57,9 @@ namespace AllocatingStuff
                         upperLimitLocal = 1;
                         break;
                 }
+
+                if (UpperCap > 0)
+                    upperLimitLocal = Math.Min(upperLimitLocal, UpperCap);
 
                 //Thread newThread = new Thread(() => Coord(coreStructure, (string)ListRegion[index, 0], (string)ListRegion[index, 1], SupplierType, (byte)ListRegion[index, 2], (byte)ListRegion[index, 3], UpperLimit, (bool)ListRegion[index, 4], PriorityTarget, YesNoByUnit, YesNoContracted, YesNoKPI));
                 //newThread.Start();
@@ -135,6 +144,35 @@ namespace AllocatingStuff
                         {"B00201", 0.3}, // Dọc mùng ( bạc hà )
                         {"C01801", 0.3}, // Cà chua cherry đỏ
                         {"C04401", 0.3}, // Đậu bắp xanh
+                        {"A05501", 0.3}, // Xà lách carol
+                        {"A05601", 0.3}, // Xà lách frisse
+                        {"A05701", 0.3}, // Xà lách iceberg
+                        {"A05801", 0.3}, // Xà lách lolo tím
+                        {"A05901", 0.3}, // Xà lách lolo xanh
+                        {"A06001", 0.3}, // Xà lách mỡ
+                        {"A06101", 0.3}, // Xà lách oakleaf đỏ
+                        {"A06201", 0.3}, // Xà lách oakleaf xanh
+                        {"A06301", 0.3}, // Xà lách radicchio
+                        {"A06401", 0.3}, // Xà lách rocket
+                        {"A06501", 0.3}, // Xà lách romaine
+                        {"A06701", 0.3}, // Xà lách salanova đỏ
+                        {"A06801", 0.3}, // Xà lách salanova xanh
+                        {"G01301", 0.3}, // Xà lách batavia tím TC
+                        {"G01501", 0.3}, // Xà lách frisse TC
+                        {"G01601", 0.3}, // Xà lách iceberg TC
+                        {"G01701", 0.3}, // Xà lách lolo tím TC
+                        {"G01801", 0.3}, // Xà lách lolo xanh TC
+                        {"G01901", 0.3}, // Xà lách mỡ TC
+                        {"G02001", 0.3}, // Xà lách oakleaf đỏ TC
+                        {"G02101", 0.3}, // Xà lách oakleaf xanh TC
+                        {"G02201", 0.3}, // Xà lách romaine TC
+                        {"G02301", 0.3}, // Xà lách salanova đỏ TC
+                        {"G02401", 0.3}, // Xà lách salanova xanh TC
+                        {"G03001", 0.3}, // Xà lách carol TC
+                        {"C02001", 0.3}, // Cà chua cherry socola
+                        {"C02401", 0.3}, // Cà chua cherry vàng
+                        {"C09001", 0.3}, // Cà chua Cherry hỗn hợp
+                        {"C09901", 0.3}, // Cà chua cherry
                     };
 
                     //_MOQ = coreStructure.dicMinimum[_Product.ProductCode.Substring(0, 1)];
@@ -835,6 +873,33 @@ namespace AllocatingStuff
             finally
             {
             }
+        }
+
+        private readonly Dictionary<string, DateTime?> _dicDate = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        ///     Convert string to DateTime.
+        ///     Optimization.
+        /// </summary>
+        /// <param name="suspect">String to convert to Date.</param>
+        /// <returns>A DateTime value from a string, if convertible.</returns>
+        private DateTime? StringToDate(string suspect)
+        {
+            // If string has been converted before.
+            if (_dicDate.TryGetValue(suspect, out DateTime? dateResult))
+                return dateResult;
+            // Otherwise, check if it's even a date.
+            if (!DateTime.TryParse(suspect, out DateTime date))
+            {
+                // Looks like it isn't.
+                // Return null, and also record string used.
+                _dicDate.Add(suspect, null);
+                return null;
+            }
+            // Welp, it's actually a date.
+            // Record the string anyway. Dis many importanto.
+            _dicDate.Add(suspect, date);
+            return date;
         }
     }
 }

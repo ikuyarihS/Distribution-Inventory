@@ -459,13 +459,11 @@ namespace AllocatingStuff
                 //Excel.Application xlApp = new Excel.Application();
                 //Aspose.Cells.Workbook xlWb = new Aspose.Cells.Workbook();
 
-                var fileName = string.Format("PO {0} - {1}.xlsx",
-                    DateFrom.ToString("dd.MM") + " - " + DateTo.ToString("dd.MM") + " (" +
-                    DateTime.Now.ToString("yyyyMMdd HH\\hmm") + ")", Choice);
+                var fileName =
+                    $"PO {DateFrom.ToString("dd.MM") + " - " + DateTo.ToString("dd.MM") + " (" + DateTime.Now.ToString("yyyyMMdd HH\\hmm") + ")"} - {Choice}.xlsx";
 
-                var fileNameXlsb = string.Format("PO {0} - {1}.xlsb",
-                    DateFrom.ToString("dd.MM") + " - " + DateTo.ToString("dd.MM") + " (" +
-                    DateTime.Now.ToString("yyyyMMdd HH\\hmm") + ")", Choice);
+                var fileNameXlsb =
+                    $"PO {DateFrom.ToString("dd.MM") + " - " + DateTo.ToString("dd.MM") + " (" + DateTime.Now.ToString("yyyyMMdd HH\\hmm") + ")"} - {Choice}.xlsb";
 
                 var path = @"D:\Documents\Stuff\VinEco\Mastah Project\Test\";
                 WriteToRichTextBoxOutput(path);
@@ -550,7 +548,7 @@ namespace AllocatingStuff
                 #endregion
 
                 stopwatch.Stop();
-                WriteToRichTextBoxOutput(string.Format("Done in {0}s!", Math.Round(stopwatch.Elapsed.TotalSeconds, 2)));
+                WriteToRichTextBoxOutput($"Done in {Math.Round(stopwatch.Elapsed.TotalSeconds, 2)}s!");
             }
             catch (Exception ex)
             {
@@ -1065,20 +1063,39 @@ namespace AllocatingStuff
                     CoordCaller(coreStructure, ListRegion, "ThuMua", 1, "B2B", YesNoByUnit, false, true);
                 }
 
-                if (!YesNoOnlyFarm)
-                    CoordCaller(coreStructure, ListRegion, "VCM", UpperCap, "VM+ VinEco", YesNoByUnit);
+                #region VM+ VinEco Priority
 
-                CoordCaller(coreStructure, ListRegion, "VinEco", 1, "VM+ VinEco", YesNoByUnit, false, true);
+                if (!YesNoOnlyFarm)
+                    CoordCaller(coreStructure, ListRegion, "VCM", 1, "VM+ VinEco Priority", YesNoByUnit);
+
+                CoordCaller(coreStructure, ListRegion, "VinEco", UpperCap, "VM+ VinEco Priority", YesNoByUnit, false, true);
 
                 if (!YesNoOnlyFarm)
                 {
-                    CoordCaller(coreStructure, ListRegion, "ThuMua", 1, "VM+ VinEco", YesNoByUnit, false, true);
-                    CoordCaller(coreStructure, ListRegion, "ThuMua", 1, "VM+ VinEco", YesNoByUnit, YesNoContracted: true);
+                    CoordCaller(coreStructure, ListRegion, "ThuMua", UpperCap, "VM+ VinEco Priority", YesNoByUnit, false, true);
+                    CoordCaller(coreStructure, ListRegion, "ThuMua", UpperCap, "VM+ VinEco Priority", YesNoByUnit, YesNoContracted: true);
                 }
 
-                CoordCaller(coreStructure, ListRegion, "VinEco", 1, "VM+ VinEco", YesNoByUnit);
+                CoordCaller(coreStructure, ListRegion, "VinEco", UpperCap, "VM+ VinEco Priority", YesNoByUnit);
                 if (!YesNoOnlyFarm)
-                    CoordCaller(coreStructure, ListRegion, "ThuMua", 1, "VM+ VinEco", YesNoByUnit);
+                    CoordCaller(coreStructure, ListRegion, "ThuMua", UpperCap, "VM+ VinEco Priority", YesNoByUnit);
+
+                #endregion
+
+                if (!YesNoOnlyFarm)
+                    CoordCaller(coreStructure, ListRegion, "VCM", 1, "VM+ VinEco", YesNoByUnit);
+
+                CoordCaller(coreStructure, ListRegion, "VinEco", UpperCap, "VM+ VinEco", YesNoByUnit, false, true);
+
+                if (!YesNoOnlyFarm)
+                {
+                    CoordCaller(coreStructure, ListRegion, "ThuMua", UpperCap, "VM+ VinEco", YesNoByUnit, false, true);
+                    CoordCaller(coreStructure, ListRegion, "ThuMua", UpperCap, "VM+ VinEco", YesNoByUnit, YesNoContracted: true);
+                }
+
+                CoordCaller(coreStructure, ListRegion, "VinEco", UpperCap, "VM+ VinEco", YesNoByUnit);
+                if (!YesNoOnlyFarm)
+                    CoordCaller(coreStructure, ListRegion, "ThuMua", UpperCap, "VM+ VinEco", YesNoByUnit);
                 
                 // In any cases, VCM's Vendors go first.
                 // Targetting their Ship-to, with their specific Vendors' target defined in FC.
@@ -1140,6 +1157,7 @@ namespace AllocatingStuff
                     CoordCaller(coreStructure, ListRegion, "ThuMua", UpperCap, "VM", false);
                 }
 
+                CoordCaller(coreStructure, ListRegion, "VCM", UpperCap, "");
                 CoordCaller(coreStructure, ListRegion, "VinEco", UpperCap, "");
 
                 if (!YesNoOnlyFarm)
@@ -1479,11 +1497,8 @@ namespace AllocatingStuff
                     var path = string.Format(
                         @"D:\Documents\Stuff\VinEco\Mastah Project\Test\" + fileName);
 
-                    var listDt = new List<DataTable>();
+                    var listDt = new List<DataTable> {dtMastah, dtLeftoverVe, dtLeftoverTm};
 
-                    listDt.Add(dtMastah);
-                    listDt.Add(dtLeftoverVe);
-                    listDt.Add(dtLeftoverTm);
 
                     LargeExportOneWorkbook(path, listDt, true, true);
 
@@ -3259,9 +3274,8 @@ namespace AllocatingStuff
 
                         #region Output to Excel - OpenXMLWriter Style, super fast.
 
-                        var fileName = string.Format("Mastah Compact {0}.xlsx",
-                            DateFrom.ToString("dd.MM") + " - " + DateTo.ToString("dd.MM") + " (" +
-                            DateTime.Now.ToString("yyyyMMdd HH\\hmm") + ")");
+                        var fileName =
+                            $"Mastah Compact {UpperCap:P0} {(FruitOnly ? "Fruit " : "")}{DateFrom.AddDays(dayDistance).ToString("dd.MM") + " - " + DateTo.AddDays(-dayDistance).ToString("dd.MM") + " (" + DateTime.Now.ToString("yyyyMMdd HH\\hmm") + ")"}.xlsb";
                         var path = string.Format(
                             @"D:\Documents\Stuff\VinEco\Mastah Project\Test\" + fileName);
 
@@ -3484,7 +3498,6 @@ namespace AllocatingStuff
                     }
                 }
         }
-
 
         private void CoordDoWhile(CoordStructure coreStructure, string SupplierRegion, string CustomerRegion,
             string SupplierType, byte dayBefore, byte dayLdBefore, double UpperLimit = 1, bool CrossRegion = false,
@@ -4188,8 +4201,8 @@ namespace AllocatingStuff
                         dicCustomer.Add(_Customer.CustomerCode + _Customer.CustomerType, _Customer);
 
                 var filePath =
-                    string.Format("D:\\Documents\\Stuff\\VinEco\\Mastah Project\\{0}",
-                        fileNameMB);
+                    $"D:\\Documents\\Stuff\\VinEco\\Mastah Project\\{fileNameMB}";
+
                 var conStr = string.Format(Constants.Excel07ConString, filePath, header);
 
                 var directoryPath = "D:\\Documents\\Stuff\\VinEco\\Mastah Project\\PO";
@@ -4228,13 +4241,22 @@ namespace AllocatingStuff
 
                     stopwatch.Start();
 
-                    EatPOAspose(PO, xlWsAspose, string.Format(Constants.Excel07ConString, _FileInfo.FullName, header),
-                        _Region, dicPO, dicProduct, dicCustomer, Product, Customer, false);
+                    EatPOAspose(PO: PO, 
+                        xlWs: xlWsAspose,
+                        conStr: string.Format(Constants.Excel07ConString, _FileInfo.FullName, header),
+                        PORegion: _Region, 
+                        dicPO: dicPO, 
+                        dicProduct: dicProduct,
+                        dicCustomer: dicCustomer,
+                        Product: Product,
+                        Customer: Customer,
+                        YesNoNew: false);
 
                     stopwatch.Stop();
 
                     WriteToRichTextBoxOutput(
-                        string.Format("- Done in {0}s!", Math.Round(stopwatch.Elapsed.TotalSeconds, 2)), false);
+                        Message: $"- Done in {Math.Round(stopwatch.Elapsed.TotalSeconds, 2)}s!",
+                        NewLine: false);
                     WriteToRichTextBoxOutput();
 
                     //EatPO(PO, xlRng, xlWs, string.Format(Constants.Excel07ConString, _FileInfo.FullName, header), _Region, dicPO, dicProduct, dicCustomer, Product, Customer, false);
@@ -5210,7 +5232,7 @@ namespace AllocatingStuff
                     dicPriority.Add(dr["CCODE"].ToString(), true);
 
                 foreach (var _Customer in ListCustomer.Where(Customer =>
-                    Customer.CustomerCode == "VM" || Customer.CustomerCode == "VM+"))
+                    Customer.CustomerCode == "VM" || Customer.CustomerCode == "VM+" || Customer.CustomerCode == "VM+ VinEco"))
                 {
                     // Cleaning stuff
                     _Customer.CustomerType = _Customer.CustomerType.Replace("Priority", "").Trim();
@@ -5742,11 +5764,13 @@ namespace AllocatingStuff
                 //rowIndex--;
 
                 // Import into a DataTable.
-                var opts = new ExportTableOptions();
-                opts.CheckMixedValueType = true;
-                opts.ExportAsString = false;
-                opts.FormatStrategy = CellValueFormatStrategy.None;
-                opts.ExportColumnName = true;
+                var opts = new ExportTableOptions
+                {
+                    CheckMixedValueType = true,
+                    ExportAsString = false,
+                    FormatStrategy = CellValueFormatStrategy.None,
+                    ExportColumnName = true
+                };
 
                 var dt = new DataTable { TableName = xlWs.Name };
                 dt = xlWs.Cells.ExportDataTable(rowIndex, 0, xlWs.Cells.MaxDataRow + 1, xlWs.Cells.MaxDataColumn + 1,
@@ -5768,11 +5792,13 @@ namespace AllocatingStuff
                 // Main Loop
                 foreach (DataColumn dc in dt.Columns)
                 {
-                    DateTime dateValue;
 
                     // Loop for every column. Only stop at column with Date at the top ( Indicating it being PurchaseOrder for that Date )
-                    if (DateTime.TryParse(dc.ColumnName, out dateValue))
+                    //if (DateTime.TryParse(dc.ColumnName, out dateValue))
+                    if (StringToDate(dc.ColumnName) != null)
                     {
+                        DateTime dateValue = StringToDate(dc.ColumnName) ?? DateTime.MinValue;
+
                         ForecastDate _FC = null;
                         var isNewFC = false;
 
@@ -6089,10 +6115,9 @@ namespace AllocatingStuff
                                 //}
 
                                 // 3rd FC layer - Normal Forecast.
-                                double _QuantityForecast = 0;
                                 if (double.TryParse(
                                     (dr[dc.ColumnName] == DBNull.Value ? 0 : dr[dc.ColumnName]).ToString(),
-                                    out _QuantityForecast))
+                                    out double _QuantityForecast))
                                 {
                                     if (!YesNoKPI)
                                         _SupplierForecast.QuantityForecast += _QuantityForecast;
@@ -6100,23 +6125,24 @@ namespace AllocatingStuff
                                     // 2nd FC layer - Minimum / Contracted Forecast - 2nd Highest Priority. 
                                     if (dt.Columns.Contains("Min"))
                                     {
-                                        double _QuantityForecastContracted = 0;
                                         if (double.TryParse((dr["Min"] == DBNull.Value ? 0 : dr["Min"]).ToString(),
-                                            out _QuantityForecastContracted))
+                                            out double _QuantityForecastContracted))
                                             _SupplierForecast.QuantityForecastContracted += _QuantityForecastContracted;
                                     }
                                 }
 
-                                if (YesNoKPI &&
-                                    Convert.ToDateTime(dr["EffectiveFrom"]).Date <=
-                                    DateTime.Parse(dc.ColumnName).Date && Convert.ToDateTime(dr["EffectiveTo"]).Date >=
-                                    DateTime.Parse(dc.ColumnName).Date)
+                                //if (YesNoKPI &&
+                                //    Convert.ToDateTime(dr["EffectiveFrom"]).Date <=
+                                //    DateTime.Parse(dc.ColumnName).Date && Convert.ToDateTime(dr["EffectiveTo"]).Date >=
+                                //    DateTime.Parse(dc.ColumnName).Date)
+                                if (YesNoKPI && 
+                                    StringToDate(dr["EffectiveFrom"].ToString())?.Date <= dateValue.Date &&
+                                    StringToDate(dr["EffectiveTo"].ToString())?.Date >= dateValue.Date)
                                 {
                                     _SupplierForecast.QualityControlPass = true;
-                                    double _QuantityForecastPlanned = 0;
                                     if (double.TryParse(
                                         (dr[dc.ColumnName] == DBNull.Value ? 0 : dr[dc.ColumnName]).ToString(),
-                                        out _QuantityForecastPlanned))
+                                        out double _QuantityForecastPlanned))
                                     {
                                         _SupplierForecast.QuantityForecastPlanned =
                                             _SupplierForecast.QuantityForecastPlanned ?? 0;
@@ -6593,12 +6619,13 @@ namespace AllocatingStuff
                 // Main Loop
                 foreach (DataColumn dc in dt.Columns)
                 {
-                    DateTime dateValue;
-
                     // Loop for every column. Only stop at column with Date at the top ( Indicating it being PurchaseOrder for that Date )
-                    if (DateTime.TryParse(dc.ColumnName,
-                        out dateValue) /* && (dateValue.Date >= DateTime.Today.AddDays(0).Date)*/)
+                    //if (DateTime.TryParse(dc.ColumnName,
+                    //    out dateValue) /* && (dateValue.Date >= DateTime.Today.AddDays(0).Date)*/)
+                    if (StringToDate(dc.ColumnName) != null)
                     {
+                        DateTime dateValue = StringToDate(dc.ColumnName) ?? DateTime.MinValue;
+
                         PurchaseOrderDate _PODate = null;
                         if (YesNoNew)
                             PO.RemoveAll(x => x.DateOrder.Date == dateValue);
@@ -6778,8 +6805,7 @@ namespace AllocatingStuff
                                             dicCustomer.Add(sKey, _customer);
                                         }
 
-                                        _CustomerOrder = new CustomerOrder();
-                                        _CustomerOrder._id = Guid.NewGuid();
+                                        _CustomerOrder = new CustomerOrder {_id = Guid.NewGuid()};
                                         _CustomerOrder.CustomerOrderId = _CustomerOrder._id;
                                         _CustomerOrder.CustomerId = _customer.CustomerId;
 
