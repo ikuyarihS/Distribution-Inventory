@@ -273,11 +273,10 @@ namespace AllocatingStuff
 
                                 DataRow dr = null;
 
-                                var _rowIndex = 0;
-                                var sKey = _Product.ProductCode + _Customer.CustomerCode + _Customer.Company +
-                                           PODate.DateOrder.Date.ToString("yyyyMMdd");
+                                var sKey =
+                                    $"{_Product.ProductCode}{_Customer.CustomerCode}{_Customer.Company}{PODate.DateOrder.Date:yyyyMMdd}";
 
-                                if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                if (!dicRow.TryGetValue(sKey, out int _rowIndex))
                                 {
                                     dr = dtPO.NewRow();
                                     dicRow.Add(sKey, dtPO.Rows.Count);
@@ -346,12 +345,10 @@ namespace AllocatingStuff
 
                                 DataRow dr = null;
 
-                                var _rowIndex = 0;
-                                var sKey = _Product.ProductCode + _Customer.CustomerBigRegion +
-                                           _Customer.CustomerRegion + _Customer.CustomerType + _Customer.Company +
-                                           PODate.DateOrder.Date.ToString("yyyyMMdd");
+                                string sKey =
+                                    $"{_Product.ProductCode}{_Customer.CustomerBigRegion}{_Customer.CustomerRegion}{_Customer.CustomerType}{_Customer.Company}{PODate.DateOrder.Date:yyyyMMdd}";
 
-                                if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                if (!dicRow.TryGetValue(sKey, out int _rowIndex))
                                 {
                                     dr = dtPO.NewRow();
                                     dicRow.Add(sKey, dtPO.Rows.Count);
@@ -418,12 +415,10 @@ namespace AllocatingStuff
 
                                 DataRow dr = null;
 
-                                var _rowIndex = 0;
-                                var sKey = _Product.ProductCode + _Customer.CustomerType +
-                                           _Customer.CustomerBigRegion + _Customer.Company +
-                                           PODate.DateOrder.Date.ToString("yyyyMMdd");
+                                var sKey =
+                                    $"{_Product.ProductCode}{_Customer.CustomerType}{_Customer.CustomerBigRegion}{_Customer.Company}{PODate.DateOrder.Date:yyyyMMdd}";
 
-                                if (!dicRow.TryGetValue(sKey, out _rowIndex))
+                                if (!dicRow.TryGetValue(sKey, out int _rowIndex))
                                 {
                                     dr = dtPO.NewRow();
                                     dicRow.Add(sKey, dtPO.Rows.Count);
@@ -4309,13 +4304,13 @@ namespace AllocatingStuff
 
                 WriteToRichTextBoxOutput("Here goes pain");
 
-                db.DropCollection("PurchaseOrder");
+                await db.DropCollectionAsync("PurchaseOrder");
                 await db.GetCollection<PurchaseOrderDate>("PurchaseOrder").InsertManyAsync(PO);
 
-                db.DropCollection("Product");
+                await db.DropCollectionAsync("Product");
                 await db.GetCollection<Product>("Product").InsertManyAsync(Product);
 
-                db.DropCollection("Customer");
+                await db.DropCollectionAsync("Customer");
                 await db.GetCollection<Customer>("Customer").InsertManyAsync(Customer);
 
                 db = null;
@@ -4737,13 +4732,13 @@ namespace AllocatingStuff
 
                 #endregion
 
-                db.DropCollection("Forecast");
+                await db.DropCollectionAsync("Forecast");
                 await db.GetCollection<ForecastDate>("Forecast").InsertManyAsync(FC);
 
-                db.DropCollection("Product");
+                await db.DropCollectionAsync("Product");
                 await db.GetCollection<Product>("Product").InsertManyAsync(Product);
 
-                db.DropCollection("Supplier");
+                await db.DropCollectionAsync("Supplier");
                 await db.GetCollection<Supplier>("Supplier").InsertManyAsync(Supplier);
 
                 db = null;
@@ -5048,7 +5043,7 @@ namespace AllocatingStuff
                     }
                 }
 
-                db.DropCollection("ProductUnit");
+                await db.DropCollectionAsync("ProductUnit");
                 await db.GetCollection<ProductUnit>("ProductUnit").InsertManyAsync(ProductUnitList);
 
                 WriteToRichTextBoxOutput(string.Format("{0} done!", dt.TableName));
@@ -5081,7 +5076,7 @@ namespace AllocatingStuff
                     }
                 }
 
-                db.DropCollection("ProductCrossRegion");
+                await db.DropCollectionAsync("ProductCrossRegion");
                 await db.GetCollection<ProductCrossRegion>("ProductCrossRegion").InsertManyAsync(ListProductRegion);
 
                 WriteToRichTextBoxOutput(string.Format("{0} done!", dt.TableName));
@@ -5114,7 +5109,7 @@ namespace AllocatingStuff
                     }
                 }
 
-                db.DropCollection("ProductRate");
+                await db.DropCollectionAsync("ProductRate");
                 await db.GetCollection<ProductRate>("ProductRate").InsertManyAsync(ListProductRate);
 
                 WriteToRichTextBoxOutput(string.Format("{0} done!", dt.TableName));
@@ -5156,7 +5151,7 @@ namespace AllocatingStuff
                     }
                 }
 
-                db.DropCollection("Product");
+                await db.DropCollectionAsync("Product");
                 await db.GetCollection<Product>("Product").InsertManyAsync(Product);
 
                 WriteToRichTextBoxOutput("Update ProductClassification - Done!");
@@ -5182,7 +5177,7 @@ namespace AllocatingStuff
                     }
                 }
 
-                db.DropCollection("Product");
+                await db.DropCollectionAsync("Product");
                 await db.GetCollection<Product>("Product").InsertManyAsync(Product);
 
                 WriteToRichTextBoxOutput(string.Format("Update {0} - Done!", xlWs.Name));
@@ -5210,7 +5205,7 @@ namespace AllocatingStuff
                     }
                 }
 
-                db.DropCollection("Product");
+                await db.DropCollectionAsync("Product");
                 await db.GetCollection<Product>("Product").InsertManyAsync(Product);
 
                 WriteToRichTextBoxOutput(string.Format("Update {0} - Done!", xlWs.Name));
@@ -5244,7 +5239,7 @@ namespace AllocatingStuff
                     _Customer.CustomerRegion = ProperStr(_Customer.CustomerRegion);
                 }
 
-                db.DropCollection("Customer");
+                await db.DropCollectionAsync("Customer");
                 await db.GetCollection<Customer>("Customer").InsertManyAsync(ListCustomer);
 
                 WriteToRichTextBoxOutput(string.Format("Update {0} - Done!", "Customer"));
@@ -6918,7 +6913,7 @@ namespace AllocatingStuff
 
                 WriteToRichTextBoxOutput("Here goes pain");
 
-                db.DropCollection("AllocateDetail");
+                await db.DropCollectionAsync("AllocateDetail");
                 await db.GetCollection<AllocateDetail>("AllocateDetail").InsertManyAsync(ListAllo);
 
                 db = null;
