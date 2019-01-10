@@ -1,45 +1,42 @@
-﻿namespace AllocatingStuff
+﻿using System;
+using System.Collections.Generic;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace AllocatingStuff
 {
     #region
-
-    using System;
-    using System.Collections.Generic;
-
-    using MongoDB.Bson.Serialization.Attributes;
 
     #endregion
 
     #region Declaring Model
 
     /// <summary>
-    /// The coord result.
+    ///     The coord result.
     /// </summary>
     public class CoordResult
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         /// <summary>
-        /// Gets or sets the coord result id.
+        ///     Gets or sets the coord result id.
         /// </summary>
         public Guid CoordResultId { get; set; }
 
         /// <summary>
-        /// Gets or sets the date order.
+        ///     Gets or sets the date order.
         /// </summary>
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime DateOrder { get; set; }
 
         /// <summary>
-        /// Gets or sets the list coord result date.
+        ///     Gets or sets the list coord result date.
         /// </summary>
         public List<CoordResultDate> ListCoordResultDate { get; set; }
     }
 
     public class CoordResultDate
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public Guid CoordResultDateId { get; set; }
 
@@ -50,8 +47,7 @@
 
     public class CoordinateDate
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public Guid CoordinateDateId { get; set; }
 
@@ -65,8 +61,7 @@
 
     public class PurchaseOrderDate
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime DateOrder { get; set; }
@@ -78,8 +73,7 @@
 
     public class ForecastDate
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
         public DateTime DateForecast { get; set; }
@@ -90,21 +84,20 @@
     }
 
     /// <summary>
-    /// The product.
+    ///     The product.
     /// </summary>
     public class Product
     {
         public Product()
         {
-            this.ProductClassification = "???";
-            this.ProductOrientation = "???";
-            this.ProductClimate = "???";
-            this.ProductionGroup = "???";
-            this.ProductNote = new List<string>();
+            ProductClassification = "???";
+            ProductOrientation = "???";
+            ProductClimate = "???";
+            ProductionGroup = "???";
+            ProductNote = new List<string>();
         }
 
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public string ProductClassification { get; set; }
 
@@ -122,19 +115,18 @@
 
         public string ProductOrientation { get; set; }
 
-        public string ProductVECode { get; set; }
+        // public string ProductVECode { get; set; }
     }
 
     public class ProductCrossRegion
     {
         public ProductCrossRegion()
         {
-            this.ToNorth = true;
-            this.ToSouth = true;
+            ToNorth = true;
+            ToSouth = true;
         }
 
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public Guid ProductId { get; set; }
 
@@ -145,8 +137,7 @@
 
     public class ProductUnit
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public List<ProductUnitRegion> ListRegion { get; set; }
 
@@ -157,8 +148,7 @@
 
     public class ProductUnitRegion
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public double OrderUnitPer { get; set; }
 
@@ -173,20 +163,18 @@
 
     public class ProductOrder
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public List<CustomerOrder> ListCustomerOrder { get; set; }
 
         public Guid ProductId { get; set; }
 
-        public Guid ProductOrderId { get; set; }
+        // public Guid ProductOrderId { get; set; }
     }
 
     public class ProductForecast
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public List<SupplierForecast> ListSupplierForecast { get; set; }
 
@@ -197,18 +185,17 @@
 
     public class CustomerOrder
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
-        public string Company { get; set; }
+        // public string Company { get; set; }
 
         public Guid CustomerId { get; set; }
 
-        public Guid CustomerOrderId { get; set; }
+        // public Guid CustomerOrderId { get; set; }
 
-        public string DesiredRegion { get; set; }
+        //public string DesiredRegion { get; set; }
 
-        public string DesiredSource { get; set; }
+        //public string DesiredSource { get; set; }
 
         public double QuantityOrder { get; set; }
 
@@ -219,8 +206,7 @@
 
     public class Customer
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public string Company { get; set; }
 
@@ -239,8 +225,7 @@
 
     public class Supplier
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public string SupplierCode { get; set; }
 
@@ -257,21 +242,20 @@
     {
         public SupplierForecast()
         {
-            this._id = Guid.NewGuid();
-            this.LabelVinEco = false;
-            this.FullOrder = false;
-            this.QualityControlPass = false;
-            this.CrossRegion = false;
-            this.Level = 1;
-            this.Availability = "1234567";
-            this.Target = "All";
-            this.QuantityForecast = 0;
-            this.QuantityForecastContracted = 0;
-            this.QuantityForecastPlanned = null;
+            _id = Guid.NewGuid();
+            LabelVinEco = false;
+            FullOrder = false;
+            QualityControlPass = false;
+            CrossRegion = false;
+            Level = 1;
+            Availability = "1234567";
+            Target = "All";
+            QuantityForecast = 0;
+            QuantityForecastContracted = 0;
+            QuantityForecastPlanned = null;
         }
 
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public string Availability { get; set; }
 
@@ -302,8 +286,7 @@
 
     public class ProductRate
     {
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public string ProductCode { get; set; }
 
@@ -316,7 +299,8 @@
 
     public class CoordStructure
     {
-        public Dictionary<DateTime, Dictionary<Product, Dictionary<CustomerOrder, Dictionary<SupplierForecast, DateTime>>>> dicCoord;
+        public Dictionary<DateTime,
+            Dictionary<Product, Dictionary<CustomerOrder, Dictionary<SupplierForecast, DateTime>>>> dicCoord;
 
         public Dictionary<Guid, Customer> dicCustomer;
 
@@ -349,11 +333,10 @@
     {
         public AllocateDetail()
         {
-            this.AllocateDetailId = this._id;
+            AllocateDetailId = _id;
         }
 
-        [BsonId]
-        public Guid _id { get; set; }
+        [BsonId] public Guid _id { get; set; }
 
         public Guid AllocateDetailId { get; set; }
 

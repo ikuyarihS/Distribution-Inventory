@@ -1,14 +1,14 @@
-﻿namespace AllocatingStuff
+﻿using System;
+using System.Windows.Forms;
+
+namespace AllocatingStuff
 {
     #region
-
-    using System;
-    using System.Windows.Forms;
 
     #endregion
 
     /// <summary>
-    /// The program.
+    ///     The program.
     /// </summary>
     internal static class Program
     {
